@@ -2,7 +2,10 @@ version: "3.8"
 
 services:
   revendai-panel:
-    image: revendai/panel:latest
+    # Build from GitHub repository instead of using pre-built image
+    build:
+      context: https://github.com/AioliaTech/sistemaapi.git
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
@@ -26,7 +29,7 @@ services:
         delay: 10s
         order: stop-first
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
