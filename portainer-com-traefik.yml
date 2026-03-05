@@ -1,0 +1,71 @@
+version: "3.8"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPLOY NO PORTAINER — Com Traefik existente
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Você JÁ TEM Traefik rodando (infra_traefik) — este stack vai se integrar a ele.
+#
+# PASSO A PASSO:
+# 1. No Portainer → Stacks → Add stack → Web editor
+# 2. Cole este arquivo completo
+# 3. Preencha as variáveis de ambiente
+# 4. Deploy
+#
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  revendai:
+    image: python:3.11-slim
+    working_dir: /app
+    command: >
+      bash -c "
+      apt-get update -qq &&
+      apt-get install -y -qq git curl &&
+      rm -rf /tmp/repo &&
+      git clone https://$${GITHUB_USER}:$${GITHUB_TOKEN}@github.com/AioliaTech/sistemaapi.git /tmp/repo &&
+      cp -r /tmp/repo/* /app/ &&
+      pip install --no-cache-dir -q -r requirements.txt &&
+      exec uvicorn main:app --host 0.0.0.0 --port 3000
+      "
+    environment:
+      - GITHUB_USER=${GITHUB_USER}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@revendai.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-@Admin123}
+      - JWT_SECRET=${JWT_SECRET}
+      - BASE_URL=https://api.revendai.com.br
+    volumes:
+      - revendai_data:/app/data
+    networks:
+      - traefik_public
+    deploy:
+      labels:
+        # Habilita Traefik para este serviço
+        - "traefik.enable=true"
+        
+        # Define o domínio
+        - "traefik.http.routers.revendai.rule=Host(`api.revendai.com.br`)"
+        
+        # Usa HTTPS (certresolver deve existir no seu Traefik)
+        - "traefik.http.routers.revendai.entrypoints=websecure"
+        - "traefik.http.routers.revendai.tls=true"
+        - "traefik.http.routers.revendai.tls.certresolver=letsencrypt"
+        
+        # Porta do container
+        - "traefik.http.services.revendai.loadbalancer.server.port=3000"
+        
+        # Redirect HTTP → HTTPS
+        - "traefik.http.middlewares.revendai-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.revendai-http.rule=Host(`api.revendai.com.br`)"
+        - "traefik.http.routers.revendai-http.entrypoints=web"
+        - "traefik.http.routers.revendai-http.middlewares=revendai-redirect"
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  revendai_data:
+
+networks:
+  traefik_public:
+    external: true
