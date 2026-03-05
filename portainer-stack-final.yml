@@ -1,0 +1,43 @@
+version: "3.8"
+
+# INSTRUÇÕES:
+# 1. No Portainer → Stacks → Add stack → Web editor
+# 2. Cole este arquivo completo
+# 3. Preencha as 4 variáveis de ambiente abaixo
+# 4. Deploy
+
+services:
+  revendai:
+    image: python:3.11-slim
+    working_dir: /app
+    # Clona o repo, instala deps e roda o app em um único comando
+    command: >
+      bash -c "
+      apt-get update -qq &&
+      apt-get install -y -qq git curl &&
+      rm -rf /tmp/repo &&
+      git clone https://github.com/AioliaTech/sistemaapi.git /tmp/repo &&
+      cp -r /tmp/repo/* /app/ &&
+      pip install --no-cache-dir -q -r requirements.txt &&
+      exec uvicorn main:app --host 0.0.0.0 --port 3000
+      "
+    ports:
+      - "3000:3000"
+    environment:
+      # ⚠️ PREENCHA ESTAS 4 VARIÁVEIS ANTES DE FAZER DEPLOY:
+      - ADMIN_EMAIL=admin@revendai.com
+      - ADMIN_PASSWORD=@Admin123
+      - JWT_SECRET=MUDE-ISSO-PARA-UMA-STRING-ALEATORIA-LONGA-GERE-COM-openssl-rand-hex-32
+      - BASE_URL=http://SEU_IP_AQUI:3000
+    volumes:
+      - revendai_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  revendai_data:
