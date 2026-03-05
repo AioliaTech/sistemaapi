@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — RevendAI Panel</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ─── Header ─────────────────────────────────────────────────────────────── -->
+<header class="app-header">
+  <div class="brand">Revend<span>AI</span> <span style="color:var(--text-muted);font-weight:400;font-size:14px">Panel</span></div>
+  <div class="header-actions">
+    <button class="btn btn-primary btn-sm" onclick="openModal('modal-create')">
+      + Nova API
+    </button>
+    <a href="/logout" class="btn btn-secondary btn-sm">Sair</a>
+  </div>
+</header>
+
+<!-- ─── Main content ───────────────────────────────────────────────────────── -->
+<main class="main-content">
+  <div class="page-title">APIs de Estoque</div>
+  <div class="page-subtitle">Gerencie todas as APIs de estoque dos seus clientes em um só lugar.</div>
+
+  <div class="table-wrapper">
+    <div class="table-header">
+      <h2>Clientes</h2>
+      <span class="clients-count" id="clients-count">{{ clients | length }}</span>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nome / Slug</th>
+          <th>Parser</th>
+          <th>Status</th>
+          <th>Última Atualização</th>
+          <th class="base-url-cell">URL Base</th>
+          <th style="text-align:right">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="clients-tbody">
+        {% if clients %}
+          {% for client in clients %}
+          <tr id="row-{{ client.id }}">
+            <td>
+              <div class="client-name">{{ client.name }}</div>
+              <div class="client-slug">{{ client.slug }}</div>
+            </td>
+            <td>
+              <span class="parser-badge">{{ client.parser_used or 'unknown' }}</span>
+            </td>
+            <td>
+              <span class="status-badge status-{{ client.status }}" data-status="{{ client.status }}">
+                {% if client.status == 'running' %}Rodando
+                {% elif client.status == 'error' %}Erro
+                {% else %}Pendente{% endif %}
+              </span>
+            </td>
+            <td>
+              <span class="updated-at" data-iso="{{ client.last_updated_at or '' }}">
+                {% if client.last_updated_at %}
+                  {{ client.last_updated_at }}
+                {% else %}
+                  —
+                {% endif %}
+              </span>
+            </td>
+            <td class="base-url-cell">
+              <a href="{{ client.base_url }}/api/status" target="_blank" title="{{ client.base_url }}">
+                {{ client.base_url }}
+              </a>
+            </td>
+            <td class="actions-cell">
+              <button class="btn btn-icon btn-sm" title="Editar"
+                data-action="edit" data-id="{{ client.id }}">✏️</button>
+              <button class="btn btn-icon btn-sm" title="Excluir"
+                data-action="delete" data-id="{{ client.id }}" data-name="{{ client.name }}">🗑️</button>
+              <button class="btn btn-icon btn-sm" title="Redeploy"
+                data-action="redeploy" data-id="{{ client.id }}">🔄</button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr id="empty-state">
+            <td colspan="6">
+              <div class="empty-state">
+                <div class="empty-icon">🔌</div>
+                <h3>Nenhuma API cadastrada</h3>
+                <p>Clique em "Nova API" para começar</p>
+                <button class="btn btn-primary" onclick="openModal('modal-create')">+ Nova API</button>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- ─── Toast container ────────────────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ─── Modal: Create API ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-create">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nova API de Estoque</h3>
+      <button class="modal-close" onclick="closeModal('modal-create')">×</button>
+    </div>
+
+    <form id="form-create">
+      <div class="form-group">
+        <label for="create-name">Nome do Cliente</label>
+        <input
+          type="text"
+          id="create-name"
+          placeholder="Ex: Loja do João"
+          required
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="create-url">URL da Fonte de Estoque</label>
+        <input
+          type="url"
+          id="create-url"
+          placeholder="https://sistema.com/estoque.xml"
+          required
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Criar API</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ─── Modal: Edit API ────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Editar API</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit')">×</button>
+    </div>
+
+    <form id="form-edit">
+      <div class="form-group">
+        <label for="edit-name">Nome do Cliente</label>
+        <input
+          type="text"
+          id="edit-name"
+          placeholder="Ex: Loja do João"
+          required
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="edit-url">URL da Fonte de Estoque</label>
+        <input
+          type="url"
+          id="edit-url"
+          placeholder="https://sistema.com/estoque.xml"
+          required
+          autocomplete="off"
+        />
+      </div>
+
+      <hr class="divider" />
+
+      <div style="margin-bottom: 4px;">
+        <button type="button" class="btn btn-warn btn-sm" id="btn-edit-redeploy">
+          🔄 Redeploy
+        </button>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">
+          Refaz toda a API com os dados atuais
+        </span>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ─── Modal: Delete Confirmation ────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Excluir API</h3>
+      <button class="modal-close" onclick="closeModal('modal-delete')">×</button>
+    </div>
+
+    <div class="delete-warning">
+      <span class="warn-icon">⚠️</span>
+      <div>
+        <strong>Esta ação não pode ser desfeita.</strong><br />
+        Todos os dados da API <span class="delete-client-name" id="delete-client-name"></span> serão permanentemente removidos.
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:var(--text-muted);">
+      Deseja continuar e excluir esta API?
+    </p>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-delete')">Cancelar</button>
+      <button type="button" class="btn btn-danger" id="btn-confirm-delete">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Scripts ────────────────────────────────────────────────────────────── -->
+<script>
+  // Pass base URL from server to JS
+  window.BASE_URL = "{{ base_url }}";
+</script>
+<script src="/static/app.js"></script>
+<script>
+  // Format dates on page load (convert ISO to São Paulo timezone)
+  document.querySelectorAll('.updated-at[data-iso]').forEach(el => {
+    const iso = el.getAttribute('data-iso');
+    if (iso) el.textContent = formatDate(iso);
+  });
+</script>
+
+</body>
+</html>

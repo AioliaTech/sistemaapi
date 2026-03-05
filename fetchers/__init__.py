@@ -1,0 +1,52 @@
+"""
+Fetchers package - Parsers individuais para cada fornecedor de dados de veículos
+"""
+from .base_parser import BaseParser
+from .altimus_parser import AltimusParser
+from .autocerto_parser import AutocertoParser
+from .autoconf_parser import AutoconfParser
+from .revendamais_parser import RevendamaisParser
+from .fronteira_parser import FronteiraParser
+from .revendapro_parser import RevendaproParser
+from .clickgarage_parser import ClickGarageParser
+from .simplesveiculo_parser import SimplesVeiculoParser
+from .boom_parser import BoomParser
+from .dsautoparser import DSAutoEstoqueParser  # Nome correto do arquivo
+from .vitorioso_wordpress_parser import WordPressParser
+from .bndv_parser import BndvParser
+from .revendai_parser import RevendaiParser
+from .comautoparser import ComautoParser1
+from .comautoparser import ComautoParser2
+from .revendaplus_parser import RevendaPlusParser
+from .carburgo_parser import CarburgoParser
+from .lojaconectada_parser import LojaConectadaParser
+from .admycar_parser import AdmycarParser
+from .autogestor_parser import AutogestorParser
+from .netcar_parser import NetcarParser
+from .revendai_telefones_parser import RevendaiTelefonesParser
+
+__all__ = [
+    'RevendaiParser',
+    'RevendaiTelefonesParser',
+    'NetcarParser',
+    'BaseParser',
+    'AltimusParser',
+    'AutocertoParser', 
+    'AutoconfParser',
+    'RevendamaisParser',
+    'FronteiraParser',
+    'RevendaproParser',
+    'ClickGarageParser',
+    'SimplesVeiculoParser',
+    'BoomParser',
+    'DSAutoEstoqueParser',
+    'BndvParser',
+    'ComautoParser1',
+    'ComautoParser2',
+    'CarburgoParser',
+    'WordPressParser',
+    'RevendaPlusParser',
+    'AdmycarParser',
+    'AutogestorParser',
+    'LojaConectadaParser'
+]

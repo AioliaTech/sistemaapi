@@ -1,0 +1,38 @@
+# Version control
+.git
+.gitignore
+
+# Environment / secrets — never bake into the image
+.env
+.env.*
+!.env.example
+
+# Runtime data — mounted as a volume at /app/data
+data/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# Test artefacts
+.pytest_cache/
+htmlcov/
+.coverage

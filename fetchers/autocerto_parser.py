@@ -1,0 +1,145 @@
+"""
+Parser específico para Autocerto (autocerto.com)
+"""
+
+from .base_parser import BaseParser
+from typing import Dict, List, Any
+import re
+
+class AutocertoParser(BaseParser):
+    """Parser para dados do Autocerto"""
+    
+    def can_parse(self, data: Any, url: str) -> bool:
+        """Verifica se pode processar dados do Autocerto"""
+        return "autocerto.com" in url.lower()
+    
+    def _detectar_categoria_em_texto(self, modelo: str, versao: str, observacoes: str) -> str:
+        """
+        Detecta categoria HATCH ou SEDAN nos campos modelo, versao e observacoes.
+        Retorna a categoria encontrada ou None se não encontrar.
+        """
+        # Concatena modelo, versão e observações para buscar
+        texto_completo = f"{modelo or ''} {versao or ''} {observacoes or ''}".upper()
+        
+        # Busca por HATCH primeiro
+        if "HATCH" in texto_completo:
+            return "Hatch"
+        
+        # Busca por SEDAN
+        if "SEDAN" in texto_completo:
+            return "Sedan"
+        
+        return None
+    
+    def parse(self, data: Any, url: str) -> List[Dict]:
+        """Processa dados do Autocerto"""
+        veiculos = data["estoque"]["veiculo"]
+        if isinstance(veiculos, dict):
+            veiculos = [veiculos]
+        
+        parsed_vehicles = []
+        for v in veiculos:
+            modelo_veiculo = v.get("modelo")
+            versao_veiculo = v.get("versao")
+            observacoes_veiculo = v.get("observacoes")
+            opcionais_veiculo = self._parse_opcionais(v.get("opcionais"))
+            
+            # Determina se é moto ou carro
+            tipo_veiculo = v.get("tipoveiculo", "").lower()
+            is_moto = "moto" in tipo_veiculo or "motocicleta" in tipo_veiculo
+            
+            if is_moto:
+                cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
+                    modelo_veiculo, versao_veiculo
+                )
+            else:
+                # Tenta detectar categoria em modelo, versão e observações primeiro
+                categoria_detectada = self._detectar_categoria_em_texto(
+                    modelo_veiculo,
+                    versao_veiculo,
+                    observacoes_veiculo
+                )
+                
+                if categoria_detectada:
+                    categoria_final = categoria_detectada
+                else:
+                    # Se não encontrou, usa a função existente com o modelo completo
+                    categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo)
+                
+                cilindrada_final = None
+            
+            parsed = self.normalize_vehicle({
+                "id": v.get("idveiculo"),
+                "tipo": "moto" if is_moto else v.get("tipoveiculo"),
+                "titulo": None,
+                "versao": v.get('versao'),
+                "marca": v.get("marca"),
+                "modelo": modelo_veiculo,
+                "ano": v.get("anomodelo"),
+                "ano_fabricacao": None,
+                "km": v.get("quilometragem"),
+                "cor": v.get("cor"),
+                "combustivel": v.get("combustivel"),
+                "observacao": observacoes_veiculo,
+                "cambio": v.get("cambio"),
+                "motor": self._extract_motor_from_version(v.get("versao")),
+                "portas": v.get("numeroportas"),
+                "categoria": categoria_final,
+                "cilindrada": cilindrada_final,
+                "preco": self.converter_preco(v.get("preco")),
+                "opcionais": opcionais_veiculo,
+                "fotos": self._extract_photos(v)
+            })
+            parsed_vehicles.append(parsed)
+        
+        return parsed_vehicles
+    
+    def _parse_opcionais(self, opcionais: Any) -> str:
+        """Processa os opcionais do Autocerto"""
+        if isinstance(opcionais, dict) and "opcional" in opcionais:
+            opcional = opcionais["opcional"]
+            if isinstance(opcional, list):
+                return ", ".join(str(item) for item in opcional if item)
+            return str(opcional) if opcional else ""
+        return ""
+    
+    def _clean_version(self, modelo: str, versao: str) -> str:
+        """Limpa a versão removendo informações técnicas redundantes"""
+        if not versao:
+            return modelo.strip() if modelo else None
+        
+        # Concatena modelo + versão limpa
+        modelo_str = modelo.strip() if modelo else ""
+        versao_limpa = ' '.join(re.sub(
+            r'\b(\d\.\d|4x[0-4]|\d+v|diesel|flex|gasolina|manual|automático|4p)\b', 
+            '', versao, flags=re.IGNORECASE
+        ).split())
+        
+        if versao_limpa:
+            return f"{modelo_str} {versao_limpa}".strip()
+        else:
+            return modelo_str or None
+    
+    def _extract_motor_from_version(self, versao: str) -> str:
+        """Extrai informações do motor da versão"""
+        if not versao:
+            return None
+        
+        # Pega a primeira palavra da versão que geralmente é o motor
+        words = versao.strip().split()
+        return words[0] if words else None
+    
+    def _extract_photos(self, v: Dict) -> List[str]:
+        """Extrai fotos do veículo Autocerto"""
+        fotos = v.get("fotos")
+        if not fotos or not (fotos_foto := fotos.get("foto")):
+            return []
+        
+        if isinstance(fotos_foto, dict):
+            fotos_foto = [fotos_foto]
+        
+        return [
+            img["url"].split("?")[0] 
+            for img in fotos_foto 
+            if isinstance(img, dict) and "url" in img
+        ]

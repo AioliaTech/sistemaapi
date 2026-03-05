@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+xmltodict
+requests
+apscheduler
+unidecode
+rapidfuzz
+python-jose[cryptography]
+python-multipart
+jinja2
+python-slugify
+aiofiles
