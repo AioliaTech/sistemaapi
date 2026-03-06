@@ -3,6 +3,7 @@ scheduler.py — Multi-tenant APScheduler manager.
 Each client gets its own background job that runs every 2 hours.
 """
 
+import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.base import JobLookupError
 from datetime import datetime
@@ -65,15 +66,10 @@ class MultiTenantScheduler:
     def trigger_now(self, client_id: str) -> None:
         """Triggers an immediate fetch for a client (redeploy)."""
         print(f"[SCHEDULER] Redeploy imediato para cliente {client_id}")
-        # Run in background thread via scheduler
-        self.scheduler.add_job(
-            self._fetch_client,
-            "date",
-            run_date=datetime.now(),
-            args=[client_id],
-            id=f"redeploy_{client_id}_{datetime.now().timestamp()}",
-            replace_existing=False,
-        )
+        # Execute diretamente em background thread (mais confiável que date job)
+        thread = threading.Thread(target=self._fetch_client, args=[client_id], daemon=True)
+        thread.start()
+        print(f"[SCHEDULER] Thread de fetch iniciada para cliente {client_id}")
 
     def _fetch_client(self, client_id: str) -> None:
         """Actual fetch logic for a single client."""
