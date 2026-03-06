@@ -1,0 +1,74 @@
+version: "3.8"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STACK FINAL — RevendAI Panel com Traefik (padrão do seu servidor)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Baseado no padrão do Portainer que você já usa:
+# - certresolver=certresolver (não letsencrypt)
+# - Nomes de router/service seguem o padrão portainer-router/portainer-service
+#
+# INSTRUÇÕES:
+# 1. Delete o stack atual no Portainer
+# 2. Stacks → Add stack → Web editor
+# 3. Cole este arquivo completo
+# 4. Preencha as variáveis de ambiente (GITHUB_USER, GITHUB_TOKEN, etc.)
+# 5. Deploy
+#
+# Acesse: https://api.revendai.com (com HTTPS automático)
+#
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  revendai:
+    image: python:3.11-slim
+    working_dir: /app
+    command: >
+      bash -c "
+      set -e &&
+      echo '[SETUP] Instalando dependências...' &&
+      apt-get update -qq &&
+      apt-get install -y -qq git curl &&
+      echo '[SETUP] Clonando repositório...' &&
+      rm -rf /tmp/repo &&
+      git clone https://$${GITHUB_USER}:$${GITHUB_TOKEN}@github.com/AioliaTech/sistemaapi.git /tmp/repo &&
+      cp -r /tmp/repo/* /app/ &&
+      echo '[SETUP] Instalando pacotes Python...' &&
+      pip install --no-cache-dir -q -r requirements.txt &&
+      echo '[SETUP] Iniciando aplicação...' &&
+      uvicorn main:app --host 0.0.0.0 --port 3000 --log-level info
+      "
+    environment:
+      # GitHub credentials (preencha nas variáveis de ambiente do Portainer)
+      - GITHUB_USER=${GITHUB_USER}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      # Admin panel credentials
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@revendai.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-@Admin123}
+      - JWT_SECRET=${JWT_SECRET}
+      - BASE_URL=${BASE_URL:-https://api.revendai.com}
+    volumes:
+      - revendai_data:/app/data
+    networks:
+      - infra_revendai-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      labels:
+        # Traefik labels (padrão do seu servidor)
+        - "traefik.enable=true"
+        - "traefik.http.routers.revendai-router.rule=Host(`api.revendai.com`)"
+        - "traefik.http.routers.revendai-router.entrypoints=websecure"
+        - "traefik.http.routers.revendai-router.tls=true"
+        - "traefik.http.routers.revendai-router.tls.certresolver=certresolver"
+        - "traefik.http.services.revendai-service.loadbalancer.server.port=3000"
+
+volumes:
+  revendai_data:
+
+networks:
+  infra_revendai-net:
+    external: true
