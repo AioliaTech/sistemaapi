@@ -109,10 +109,21 @@ def dashboard(request: Request, _auth=Depends(require_auth)):
     clients = client_manager.list_clients()
     clients_data = []
     for c in clients:
+        # Treat 0 vehicles as error
+        status = c.status
+        if c.status == "running" and c.vehicle_count == 0:
+            status = "error"
+        
         clients_data.append({
             **c.to_dict(),
+            "status": status,
             "base_url": f"{BASE_URL}/{c.slug}",
         })
+    
+    # Sort: errors first, then pending, then running
+    status_priority = {"error": 0, "pending": 1, "running": 2}
+    clients_data.sort(key=lambda x: status_priority.get(x["status"], 3))
+    
     return templates.TemplateResponse(
         "dashboard.html",
         {
@@ -127,10 +138,24 @@ def dashboard(request: Request, _auth=Depends(require_auth)):
 @app.get("/admin/clients")
 def admin_list_clients(_auth=Depends(require_api_auth)):
     clients = client_manager.list_clients()
-    return [
-        {**c.to_dict(), "base_url": f"{BASE_URL}/{c.slug}"}
-        for c in clients
-    ]
+    clients_data = []
+    for c in clients:
+        # Treat 0 vehicles as error
+        status = c.status
+        if c.status == "running" and c.vehicle_count == 0:
+            status = "error"
+        
+        clients_data.append({
+            **c.to_dict(),
+            "status": status,
+            "base_url": f"{BASE_URL}/{c.slug}"
+        })
+    
+    # Sort: errors first, then pending, then running
+    status_priority = {"error": 0, "pending": 1, "running": 2}
+    clients_data.sort(key=lambda x: status_priority.get(x["status"], 3))
+    
+    return clients_data
 
 @app.post("/admin/clients", status_code=201)
 def admin_create_client(body: CreateClientRequest, _auth=Depends(require_api_auth)):

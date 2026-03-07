@@ -82,9 +82,15 @@ async function apiRequest(method, url, body = null) {
 
 // ─── Status badge helper ──────────────────────────────────────────────────────
 
-function statusBadge(status) {
+function statusBadge(status, vehicleCount) {
   const labels = { running: 'Rodando', error: 'Erro', pending: 'Pendente' };
-  const label = labels[status] || status;
+  let label = labels[status] || status;
+  
+  // Show "0 veículos" for error status with 0 vehicles
+  if (status === 'error' && vehicleCount === 0) {
+    label = '0 veículos';
+  }
+  
   return `<span class="status-badge status-${status}">${label}</span>`;
 }
 
@@ -127,7 +133,7 @@ function renderRow(client) {
         <div class="client-slug">${escHtml(client.slug)}</div>
       </td>
       <td><span class="parser-badge">${escHtml(client.parser_used || 'unknown')}</span></td>
-      <td>${statusBadge(client.status)}</td>
+      <td>${statusBadge(client.status, client.vehicle_count)}</td>
       <td><span class="updated-at">${formatDate(client.last_updated_at)}</span></td>
       <td class="base-url-cell">
         <button class="btn btn-sm btn-secondary" title="Ver URLs da API"
