@@ -144,6 +144,20 @@
           required
           autocomplete="off"
         />
+        <button type="button" class="btn-link btn-sm" onclick="toggleCustomUrls('create')" style="margin-top:8px">
+          ⚙️ Custom URLs (avançado)
+        </button>
+      </div>
+
+      <div class="form-group custom-urls-section" id="custom-urls-create" style="display:none">
+        <label for="create-custom-urls">Variáveis de Ambiente Customizadas</label>
+        <textarea
+          id="create-custom-urls"
+          placeholder="XML_URL_1=https://...&#10;XML_URL_2=https://...&#10;OUTRO_ENV=valor"
+          rows="5"
+          autocomplete="off"
+        ></textarea>
+        <p class="form-hint">Cole aqui variáveis de ambiente no formato KEY=VALUE (uma por linha)</p>
       </div>
 
       <div class="modal-footer">
@@ -183,6 +197,20 @@
           required
           autocomplete="off"
         />
+        <button type="button" class="btn-link btn-sm" onclick="toggleCustomUrls('edit')" style="margin-top:8px">
+          ⚙️ Custom URLs (avançado)
+        </button>
+      </div>
+
+      <div class="form-group custom-urls-section" id="custom-urls-edit" style="display:none">
+        <label for="edit-custom-urls">Variáveis de Ambiente Customizadas</label>
+        <textarea
+          id="edit-custom-urls"
+          placeholder="XML_URL_1=https://...&#10;XML_URL_2=https://...&#10;OUTRO_ENV=valor"
+          rows="5"
+          autocomplete="off"
+        ></textarea>
+        <p class="form-hint">Cole aqui variáveis de ambiente no formato KEY=VALUE (uma por linha)</p>
       </div>
 
       <hr class="divider" />

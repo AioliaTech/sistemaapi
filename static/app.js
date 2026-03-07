@@ -198,6 +198,15 @@ function updateCount(delta) {
   }
 }
 
+// ─── Toggle Custom URLs ───────────────────────────────────────────────────────
+
+function toggleCustomUrls(mode) {
+  const section = document.getElementById(`custom-urls-${mode}`);
+  if (section) {
+    section.style.display = section.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
 // ─── Create API ───────────────────────────────────────────────────────────────
 
 document.getElementById('form-create')?.addEventListener('submit', async (e) => {
@@ -205,6 +214,7 @@ document.getElementById('form-create')?.addEventListener('submit', async (e) => 
   const btn = e.target.querySelector('[type=submit]');
   const name = document.getElementById('create-name').value.trim();
   const source_url = document.getElementById('create-url').value.trim();
+  const custom_urls = document.getElementById('create-custom-urls').value.trim();
 
   if (!name || !source_url) return;
 
@@ -212,9 +222,15 @@ document.getElementById('form-create')?.addEventListener('submit', async (e) => 
   btn.innerHTML = '<span class="spinner"></span> Criando...';
 
   try {
-    const client = await apiRequest('POST', '/admin/clients', { name, source_url });
+    const payload = { name, source_url };
+    if (custom_urls) {
+      payload.custom_urls = custom_urls;
+    }
+    
+    const client = await apiRequest('POST', '/admin/clients', payload);
     closeModal('modal-create');
     e.target.reset();
+    document.getElementById('custom-urls-create').style.display = 'none';
     addRow(client);
     showToast(`API "${client.name}" criada! Deploy em andamento...`, 'success');
 
@@ -248,6 +264,7 @@ function openEditModal(clientId) {
     if (client) {
       document.getElementById('edit-name').value = client.name;
       document.getElementById('edit-url').value = client.source_url;
+      document.getElementById('edit-custom-urls').value = client.custom_urls || '';
     }
   }).catch(() => {});
 
@@ -261,6 +278,7 @@ document.getElementById('form-edit')?.addEventListener('submit', async (e) => {
   const btn = e.target.querySelector('[type=submit]');
   const name = document.getElementById('edit-name').value.trim();
   const source_url = document.getElementById('edit-url').value.trim();
+  const custom_urls = document.getElementById('edit-custom-urls').value.trim();
 
   if (!name || !source_url) return;
 
@@ -268,7 +286,12 @@ document.getElementById('form-edit')?.addEventListener('submit', async (e) => {
   btn.innerHTML = '<span class="spinner"></span> Salvando...';
 
   try {
-    const client = await apiRequest('PUT', `/admin/clients/${editingClientId}`, { name, source_url });
+    const payload = { name, source_url };
+    if (custom_urls) {
+      payload.custom_urls = custom_urls;
+    }
+    
+    const client = await apiRequest('PUT', `/admin/clients/${editingClientId}`, payload);
     closeModal('modal-edit');
     updateRow(client);
     showToast(`API "${client.name}" atualizada!`, 'success');

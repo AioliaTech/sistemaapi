@@ -103,6 +103,64 @@ a:hover { text-decoration: underline; }
   border-color: var(--accent);
 }
 
+.form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.form-group textarea:focus {
+  border-color: var(--accent);
+}
+
+.form-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 6px 0 0 0;
+  line-height: 1.4;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.btn-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.custom-urls-section {
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    max-height: 300px;
+  }
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

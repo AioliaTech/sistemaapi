@@ -58,10 +58,12 @@ def on_shutdown():
 class CreateClientRequest(BaseModel):
     name: str
     source_url: str
+    custom_urls: Optional[str] = None
 
 class UpdateClientRequest(BaseModel):
     name: str
     source_url: str
+    custom_urls: Optional[str] = None
 
 # ─── Auth routes ──────────────────────────────────────────────────────────────
 
@@ -167,6 +169,7 @@ def admin_create_client(body: CreateClientRequest, _auth=Depends(require_api_aut
     client = client_manager.create_client(
         name=body.name.strip(),
         source_url=body.source_url.strip(),
+        custom_urls=body.custom_urls.strip() if body.custom_urls else None,
     )
     # Schedule and trigger immediate fetch
     scheduler.add_client_job(client.id, run_now=True)
@@ -188,6 +191,7 @@ def admin_update_client(
         client_id=client_id,
         name=body.name.strip(),
         source_url=body.source_url.strip(),
+        custom_urls=body.custom_urls.strip() if body.custom_urls else None,
     )
     if not client:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")

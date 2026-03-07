@@ -31,6 +31,7 @@ class ClientConfig:
     last_updated_at: Optional[str] = None
     last_error: Optional[str] = None
     vehicle_count: int = 0
+    custom_urls: Optional[str] = None  # Custom environment variables
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -48,6 +49,7 @@ class ClientConfig:
             last_updated_at=data.get("last_updated_at"),
             last_error=data.get("last_error"),
             vehicle_count=data.get("vehicle_count", 0),
+            custom_urls=data.get("custom_urls"),
         )
 
 
@@ -127,7 +129,7 @@ class ClientManager:
                     return c
             return None
 
-    def create_client(self, name: str, source_url: str) -> ClientConfig:
+    def create_client(self, name: str, source_url: str, custom_urls: Optional[str] = None) -> ClientConfig:
         with self._lock:
             slug = self._generate_slug(name)
             client = ClientConfig(
@@ -136,6 +138,7 @@ class ClientManager:
                 slug=slug,
                 source_url=source_url,
                 status="pending",
+                custom_urls=custom_urls,
             )
             self._clients.append(client)
             self._save_registry_locked()
@@ -143,7 +146,7 @@ class ClientManager:
         self.get_client_data_path(slug).mkdir(parents=True, exist_ok=True)
         return client
 
-    def update_client(self, client_id: str, name: str, source_url: str) -> Optional[ClientConfig]:
+    def update_client(self, client_id: str, name: str, source_url: str, custom_urls: Optional[str] = None) -> Optional[ClientConfig]:
         with self._lock:
             client = None
             for c in self._clients:
@@ -159,6 +162,7 @@ class ClientManager:
             client.name = name
             client.slug = new_slug
             client.source_url = source_url
+            client.custom_urls = custom_urls
             self._save_registry_locked()
 
         # Renomeia diretório se o slug mudou (outside lock — filesystem op)
