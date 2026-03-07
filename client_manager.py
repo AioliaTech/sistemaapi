@@ -6,7 +6,7 @@ import json
 import threading
 import uuid
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass, field, asdict
@@ -27,7 +27,7 @@ class ClientConfig:
     source_url: str
     parser_used: str = "unknown"
     status: str = "pending"   # pending | running | error
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     last_updated_at: Optional[str] = None
     last_error: Optional[str] = None
     vehicle_count: int = 0
@@ -44,7 +44,7 @@ class ClientConfig:
             source_url=data["source_url"],
             parser_used=data.get("parser_used", "unknown"),
             status=data.get("status", "pending"),
-            created_at=data.get("created_at", datetime.now().isoformat()),
+            created_at=data.get("created_at", datetime.now(timezone.utc).isoformat()),
             last_updated_at=data.get("last_updated_at"),
             last_error=data.get("last_error"),
             vehicle_count=data.get("vehicle_count", 0),
@@ -208,7 +208,7 @@ class ClientManager:
             if not client:
                 return
             client.status = status
-            client.last_updated_at = datetime.now().isoformat()
+            client.last_updated_at = datetime.now(timezone.utc).isoformat()
             if parser_used:
                 client.parser_used = parser_used
             if status == "running":

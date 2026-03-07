@@ -93,14 +93,18 @@ function statusBadge(status) {
 function formatDate(isoString) {
   if (!isoString) return '<span style="color:var(--text-muted)">—</span>';
   try {
-    // Parse ISO string and convert to UTC-3 (São Paulo)
+    // Parse ISO UTC string
     const d = new Date(isoString);
     
-    // Get UTC time in milliseconds and subtract 3 hours (UTC-3)
-    const utcTime = d.getTime();
-    const saoPauloTime = new Date(utcTime - (3 * 60 * 60 * 1000));
+    // Check if date is valid
+    if (isNaN(d.getTime())) {
+      return isoString;
+    }
     
-    // Format manually to ensure correct timezone
+    // Subtract 3 hours for São Paulo (UTC-3)
+    const saoPauloTime = new Date(d.getTime() - (3 * 60 * 60 * 1000));
+    
+    // Format using UTC methods (since we already adjusted the time)
     const day = String(saoPauloTime.getUTCDate()).padStart(2, '0');
     const month = String(saoPauloTime.getUTCMonth() + 1).padStart(2, '0');
     const year = saoPauloTime.getUTCFullYear();
@@ -109,7 +113,6 @@ function formatDate(isoString) {
     
     return `${day}/${month}/${year}, ${hours}:${minutes}`;
   } catch (err) {
-    console.error('[formatDate] Error:', err, 'Input:', isoString);
     return isoString;
   }
 }
