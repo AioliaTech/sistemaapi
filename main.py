@@ -120,9 +120,9 @@ def dashboard(request: Request, _auth=Depends(require_auth)):
             "base_url": f"{BASE_URL}/{c.slug}",
         })
     
-    # Sort: errors first, then pending, then running
+    # Sort: errors first, then by alphabetical order within each status
     status_priority = {"error": 0, "pending": 1, "running": 2}
-    clients_data.sort(key=lambda x: status_priority.get(x["status"], 3))
+    clients_data.sort(key=lambda x: (status_priority.get(x["status"], 3), x["name"].lower()))
     
     return templates.TemplateResponse(
         "dashboard.html",
@@ -151,9 +151,9 @@ def admin_list_clients(_auth=Depends(require_api_auth)):
             "base_url": f"{BASE_URL}/{c.slug}"
         })
     
-    # Sort: errors first, then pending, then running
+    # Sort: errors first, then by alphabetical order within each status
     status_priority = {"error": 0, "pending": 1, "running": 2}
-    clients_data.sort(key=lambda x: status_priority.get(x["status"], 3))
+    clients_data.sort(key=lambda x: (status_priority.get(x["status"], 3), x["name"].lower()))
     
     return clients_data
 

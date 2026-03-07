@@ -421,10 +421,62 @@ function pollClientStatus(clientId, maxAttempts = 30, interval = 3000) {
   setTimeout(poll, interval);
 }
 
+// ─── Search filter ────────────────────────────────────────────────────────────
+
+function filterClients() {
+  const searchInput = document.getElementById('search-clients');
+  if (!searchInput) return;
+  
+  const searchTerm = searchInput.value.toLowerCase().trim();
+  const tbody = document.getElementById('clients-tbody');
+  const rows = tbody.querySelectorAll('tr:not(#empty-state)');
+  
+  let visibleCount = 0;
+  
+  rows.forEach(row => {
+    const clientName = row.querySelector('.client-name')?.textContent.toLowerCase() || '';
+    const clientSlug = row.querySelector('.client-slug')?.textContent.toLowerCase() || '';
+    
+    if (clientName.includes(searchTerm) || clientSlug.includes(searchTerm)) {
+      row.style.display = '';
+      visibleCount++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  
+  // Show/hide empty state
+  const emptyState = document.getElementById('empty-state');
+  if (visibleCount === 0 && rows.length > 0) {
+    if (!emptyState) {
+      tbody.innerHTML = `
+        <tr id="search-empty-state">
+          <td colspan="6">
+            <div class="empty-state">
+              <div class="empty-icon">🔍</div>
+              <h3>Nenhum cliente encontrado</h3>
+              <p>Tente outro termo de busca</p>
+            </div>
+          </td>
+        </tr>`;
+    }
+  } else {
+    const searchEmptyState = document.getElementById('search-empty-state');
+    if (searchEmptyState) searchEmptyState.remove();
+  }
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 // Auto-poll pending clients on page load
 document.addEventListener('DOMContentLoaded', () => {
+  // Setup search filter
+  const searchInput = document.getElementById('search-clients');
+  if (searchInput) {
+    searchInput.addEventListener('input', filterClients);
+  }
+  
+  // Auto-poll pending clients
   document.querySelectorAll('[data-status="pending"]').forEach(el => {
     const clientId = el.closest('tr')?.id?.replace('row-', '');
     if (clientId) pollClientStatus(clientId);
