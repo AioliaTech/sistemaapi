@@ -9,6 +9,8 @@ document.addEventListener('click', (e) => {
   const name = btn.dataset.name;
   const slug = btn.dataset.slug;
 
+  console.log('[Event] Action:', action, 'ID:', id, 'Slug:', slug);
+
   if (action === 'edit') openEditModal(id);
   else if (action === 'delete') openDeleteModal(id, name);
   else if (action === 'redeploy') doRedeploy(id, btn);
@@ -94,12 +96,16 @@ function formatDate(isoString) {
   if (!isoString) return '<span style="color:var(--text-muted)">—</span>';
   try {
     const d = new Date(isoString);
-    return d.toLocaleString('pt-BR', {
+    console.log('[formatDate] Input:', isoString, 'Parsed:', d);
+    const formatted = d.toLocaleString('pt-BR', {
       timeZone: 'America/Sao_Paulo',
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
-  } catch {
+    console.log('[formatDate] Formatted:', formatted);
+    return formatted;
+  } catch (err) {
+    console.error('[formatDate] Error:', err, 'Input:', isoString);
     return isoString;
   }
 }
@@ -294,11 +300,23 @@ function openDeleteModal(clientId, clientName) {
 // ─── URLs Modal ───────────────────────────────────────────────────────────────
 
 function openUrlsModal(slug) {
+  console.log('[openUrlsModal] Called with slug:', slug);
+  console.log('[openUrlsModal] BASE_URL:', window.BASE_URL);
+  
   const externalUrl = `${window.BASE_URL}/${slug}/api/data`;
   const internalUrl = `http://api_revendai:3000/${slug}/api/data`;
   
-  document.getElementById('url-external').textContent = externalUrl;
-  document.getElementById('url-internal').textContent = internalUrl;
+  console.log('[openUrlsModal] External URL:', externalUrl);
+  console.log('[openUrlsModal] Internal URL:', internalUrl);
+  
+  const externalEl = document.getElementById('url-external');
+  const internalEl = document.getElementById('url-internal');
+  
+  console.log('[openUrlsModal] External element:', externalEl);
+  console.log('[openUrlsModal] Internal element:', internalEl);
+  
+  if (externalEl) externalEl.textContent = externalUrl;
+  if (internalEl) internalEl.textContent = internalUrl;
   
   openModal('modal-urls');
 }
