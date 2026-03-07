@@ -525,13 +525,13 @@ tbody td {
 .url-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .url-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .url-item label {
@@ -540,38 +540,39 @@ tbody td {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
 .url-copy-box {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px 12px;
+  padding: 14px;
 }
 
 .url-code {
-  flex: 1;
   font-family: 'Courier New', monospace;
   font-size: 12px;
   color: var(--accent);
   word-break: break-all;
-  line-height: 1.4;
+  line-height: 1.6;
+  padding: 8px 0;
 }
 
 .url-copy-box .btn {
-  flex-shrink: 0;
-  padding: 6px 12px;
-  font-size: 11px;
+  align-self: flex-start;
+  padding: 8px 16px;
+  font-size: 12px;
 }
 
 .url-hint {
   font-size: 11px;
   color: var(--text-muted);
   margin: 0;
-  padding-left: 4px;
+  line-height: 1.4;
 }
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */

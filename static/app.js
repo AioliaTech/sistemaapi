@@ -9,8 +9,6 @@ document.addEventListener('click', (e) => {
   const name = btn.dataset.name;
   const slug = btn.dataset.slug;
 
-  console.log('[Event] Action:', action, 'ID:', id, 'Slug:', slug);
-
   if (action === 'edit') openEditModal(id);
   else if (action === 'delete') openDeleteModal(id, name);
   else if (action === 'redeploy') doRedeploy(id, btn);
@@ -90,20 +88,26 @@ function statusBadge(status) {
   return `<span class="status-badge status-${status}">${label}</span>`;
 }
 
-// ─── Date formatter (São Paulo) ───────────────────────────────────────────────
+// ─── Date formatter (São Paulo - UTC-3) ───────────────────────────────────────
 
 function formatDate(isoString) {
   if (!isoString) return '<span style="color:var(--text-muted)">—</span>';
   try {
+    // Parse ISO string and convert to UTC-3 (São Paulo)
     const d = new Date(isoString);
-    console.log('[formatDate] Input:', isoString, 'Parsed:', d);
-    const formatted = d.toLocaleString('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-    console.log('[formatDate] Formatted:', formatted);
-    return formatted;
+    
+    // Get UTC time in milliseconds and subtract 3 hours (UTC-3)
+    const utcTime = d.getTime();
+    const saoPauloTime = new Date(utcTime - (3 * 60 * 60 * 1000));
+    
+    // Format manually to ensure correct timezone
+    const day = String(saoPauloTime.getUTCDate()).padStart(2, '0');
+    const month = String(saoPauloTime.getUTCMonth() + 1).padStart(2, '0');
+    const year = saoPauloTime.getUTCFullYear();
+    const hours = String(saoPauloTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(saoPauloTime.getUTCMinutes()).padStart(2, '0');
+    
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
   } catch (err) {
     console.error('[formatDate] Error:', err, 'Input:', isoString);
     return isoString;
@@ -300,20 +304,11 @@ function openDeleteModal(clientId, clientName) {
 // ─── URLs Modal ───────────────────────────────────────────────────────────────
 
 function openUrlsModal(slug) {
-  console.log('[openUrlsModal] Called with slug:', slug);
-  console.log('[openUrlsModal] BASE_URL:', window.BASE_URL);
-  
   const externalUrl = `${window.BASE_URL}/${slug}/api/data`;
   const internalUrl = `http://api_revendai:3000/${slug}/api/data`;
   
-  console.log('[openUrlsModal] External URL:', externalUrl);
-  console.log('[openUrlsModal] Internal URL:', internalUrl);
-  
   const externalEl = document.getElementById('url-external');
   const internalEl = document.getElementById('url-internal');
-  
-  console.log('[openUrlsModal] External element:', externalEl);
-  console.log('[openUrlsModal] Internal element:', internalEl);
   
   if (externalEl) externalEl.textContent = externalUrl;
   if (internalEl) internalEl.textContent = internalUrl;
