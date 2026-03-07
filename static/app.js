@@ -7,10 +7,12 @@ document.addEventListener('click', (e) => {
   const action = btn.dataset.action;
   const id = btn.dataset.id;
   const name = btn.dataset.name;
+  const slug = btn.dataset.slug;
 
   if (action === 'edit') openEditModal(id);
   else if (action === 'delete') openDeleteModal(id, name);
   else if (action === 'redeploy') doRedeploy(id, btn);
+  else if (action === 'show-urls') openUrlsModal(slug);
 });
 
 // ─── Toast notifications ──────────────────────────────────────────────────────
@@ -105,7 +107,6 @@ function formatDate(isoString) {
 // ─── Render table row ─────────────────────────────────────────────────────────
 
 function renderRow(client) {
-  const baseUrl = `${window.BASE_URL}/${client.slug}`;
   return `
     <tr id="row-${client.id}">
       <td>
@@ -116,7 +117,8 @@ function renderRow(client) {
       <td>${statusBadge(client.status)}</td>
       <td><span class="updated-at">${formatDate(client.last_updated_at)}</span></td>
       <td class="base-url-cell">
-        <a href="${baseUrl}/api/status" target="_blank" title="${baseUrl}">${baseUrl}</a>
+        <button class="btn btn-sm btn-secondary" title="Ver URLs da API"
+          data-action="show-urls" data-slug="${escHtml(client.slug)}">📋 URLs</button>
       </td>
       <td class="actions-cell">
         <button class="btn btn-icon btn-sm" title="Editar"
@@ -287,6 +289,44 @@ function openDeleteModal(clientId, clientName) {
   const nameEl = document.getElementById('delete-client-name');
   if (nameEl) nameEl.textContent = clientName;
   openModal('modal-delete');
+}
+
+// ─── URLs Modal ───────────────────────────────────────────────────────────────
+
+function openUrlsModal(slug) {
+  const externalUrl = `${window.BASE_URL}/${slug}/api/data`;
+  const internalUrl = `http://api_revendai:3000/${slug}/api/data`;
+  
+  document.getElementById('url-external').textContent = externalUrl;
+  document.getElementById('url-internal').textContent = internalUrl;
+  
+  openModal('modal-urls');
+}
+
+async function copyUrl(type) {
+  const urlId = type === 'external' ? 'url-external' : 'url-internal';
+  const urlElement = document.getElementById(urlId);
+  const url = urlElement.textContent;
+  
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('URL copiada para área de transferência!', 'success', 2000);
+  } catch (err) {
+    // Fallback para navegadores antigos
+    const textArea = document.createElement('textarea');
+    textArea.value = url;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      showToast('URL copiada para área de transferência!', 'success', 2000);
+    } catch (err2) {
+      showToast('Erro ao copiar URL', 'error');
+    }
+    document.body.removeChild(textArea);
+  }
 }
 
 document.getElementById('btn-confirm-delete')?.addEventListener('click', async () => {

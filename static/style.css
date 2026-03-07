@@ -521,6 +521,59 @@ tbody td {
   margin: 20px 0;
 }
 
+/* ─── URL Modal ─────────────────────────────────────────────────────────────── */
+.url-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.url-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.url-item label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.url-copy-box {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.url-code {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.url-copy-box .btn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 11px;
+}
+
+.url-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+  padding-left: 4px;
+}
+
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .app-header { padding: 0 16px; }

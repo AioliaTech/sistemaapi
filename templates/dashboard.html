@@ -64,16 +64,15 @@
             <td>
               <span class="updated-at" data-iso="{{ client.last_updated_at or '' }}">
                 {% if client.last_updated_at %}
-                  {{ client.last_updated_at }}
+                  Carregando...
                 {% else %}
                   —
                 {% endif %}
               </span>
             </td>
             <td class="base-url-cell">
-              <a href="{{ client.base_url }}/api/status" target="_blank" title="{{ client.base_url }}">
-                {{ client.base_url }}
-              </a>
+              <button class="btn btn-sm btn-secondary" title="Ver URLs da API"
+                data-action="show-urls" data-slug="{{ client.slug }}">📋 URLs</button>
             </td>
             <td class="actions-cell">
               <button class="btn btn-icon btn-sm" title="Editar"
@@ -217,6 +216,40 @@
     <div class="modal-footer">
       <button type="button" class="btn btn-secondary" onclick="closeModal('modal-delete')">Cancelar</button>
       <button type="button" class="btn btn-danger" id="btn-confirm-delete">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: URLs da API ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-urls">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>URLs da API</h3>
+      <button class="modal-close" onclick="closeModal('modal-urls')">×</button>
+    </div>
+
+    <div class="url-list">
+      <div class="url-item">
+        <label>URL Externa (Pública)</label>
+        <div class="url-copy-box">
+          <code id="url-external" class="url-code"></code>
+          <button class="btn btn-sm btn-primary" onclick="copyUrl('external')">📋 Copiar</button>
+        </div>
+        <p class="url-hint">Use esta URL para acessar a API externamente</p>
+      </div>
+
+      <div class="url-item">
+        <label>URL Interna (Docker)</label>
+        <div class="url-copy-box">
+          <code id="url-internal" class="url-code"></code>
+          <button class="btn btn-sm btn-primary" onclick="copyUrl('internal')">📋 Copiar</button>
+        </div>
+        <p class="url-hint">Use esta URL para comunicação entre containers Docker</p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-urls')">Fechar</button>
     </div>
   </div>
 </div>
