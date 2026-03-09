@@ -82,17 +82,62 @@ class MultiTenantScheduler:
         output_path = self.client_manager.get_client_data_path(client.slug)
 
         try:
-            result = fetch_for_client(client.source_url, output_path)
-            vehicle_count = result.get("_total_count", 0)
-            parser_used = result.get("_parser_used", "unknown")
-
+            # Parse custom URLs if provided
+            urls_to_fetch = []
+            if client.custom_urls:
+                # Parse KEY=VALUE format
+                for line in client.custom_urls.strip().split('\n'):
+                    line = line.strip()
+                    if '=' in line and line.startswith(('XML_URL', 'URL')):
+                        url = line.split('=', 1)[1].strip()
+                        if url:
+                            urls_to_fetch.append(url)
+            
+            # Use source_url if no custom URLs
+            if not urls_to_fetch and client.source_url:
+                urls_to_fetch.append(client.source_url)
+            
+            if not urls_to_fetch:
+                raise ValueError("Nenhuma URL configurada (source_url ou custom_urls)")
+            
+            # Fetch from all URLs and combine results
+            all_vehicles = []
+            parser_used = "unknown"
+            
+            for url in urls_to_fetch:
+                print(f"[SCHEDULER] Processando URL: {url}")
+                result = fetch_for_client(url, output_path)
+                all_vehicles.extend(result.get("veiculos", []))
+                if result.get("_parser_used"):
+                    parser_used = result.get("_parser_used")
+            
+            # Save combined result
+            from xml_fetcher import UnifiedVehicleFetcher
+            fetcher = UnifiedVehicleFetcher()
+            stats = fetcher._generate_stats(all_vehicles)
+            
+            combined_result = {
+                "veiculos": all_vehicles,
+                "_updated_at": datetime.now().isoformat(),
+                "_total_count": len(all_vehicles),
+                "_sources_processed": len(urls_to_fetch),
+                "_parser_used": parser_used,
+                "_statistics": stats
+            }
+            
+            import json
+            data_file = output_path / "data.json"
+            with open(data_file, "w", encoding="utf-8") as f:
+                json.dump(combined_result, f, ensure_ascii=False, indent=2)
+            
+            vehicle_count = len(all_vehicles)
             self.client_manager.update_client_status(
                 client_id=client_id,
                 status="running",
                 parser_used=parser_used,
                 vehicle_count=vehicle_count,
             )
-            print(f"[SCHEDULER] ✓ Cliente '{client.name}': {vehicle_count} veículos, parser={parser_used}")
+            print(f"[SCHEDULER] ✓ Cliente '{client.name}': {vehicle_count} veículos de {len(urls_to_fetch)} fonte(s), parser={parser_used}")
 
         except Exception as e:
             error_msg = str(e)
