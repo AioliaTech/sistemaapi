@@ -172,7 +172,7 @@ def admin_create_client(body: CreateClientRequest, _auth=Depends(require_api_aut
 
     client = client_manager.create_client(
         name=body.name.strip(),
-        source_url=source_url or "custom",  # Placeholder if using custom URLs
+        source_url=source_url,  # Empty string if using only custom URLs
         custom_urls=custom_urls,
     )
     # Schedule and trigger immediate fetch
@@ -198,7 +198,7 @@ def admin_update_client(
     client = client_manager.update_client(
         client_id=client_id,
         name=body.name.strip(),
-        source_url=source_url or "custom",  # Placeholder if using custom URLs
+        source_url=source_url,  # Empty string if using only custom URLs
         custom_urls=custom_urls,
     )
     if not client:
