@@ -19,14 +19,29 @@ class MultiTenantScheduler:
     def __init__(self, client_manager: "ClientManager"):
         self.client_manager = client_manager
         self.scheduler = BackgroundScheduler(timezone="America/Sao_Paulo")
+        print(f"[SCHEDULER] ✓ Scheduler inicializado em {datetime.now()}")
 
     def start(self) -> None:
         """Starts the scheduler and schedules jobs for all existing clients."""
+        print(f"[SCHEDULER] ⚡ Método start() chamado em {datetime.now()}")
         self.scheduler.start()
+        print(f"[SCHEDULER] ✓ BackgroundScheduler.start() executado, running={self.scheduler.running}")
+        
         clients = self.client_manager.list_clients()
         print(f"[SCHEDULER] Iniciando com {len(clients)} cliente(s)")
+        
+        if len(clients) == 0:
+            print("[SCHEDULER] ⚠️  AVISO: Nenhum cliente encontrado! Nenhum job será agendado.")
+        
         for client in clients:
             self._schedule_client(client.id)
+        
+        # Log all scheduled jobs
+        jobs = self.scheduler.get_jobs()
+        print(f"[SCHEDULER] ✓ Total de jobs agendados: {len(jobs)}")
+        for job in jobs:
+            print(f"[SCHEDULER]   - Job: {job.id}, próxima execução: {job.next_run_time}")
+        
         print("[SCHEDULER] Todos os jobs agendados")
 
     def _schedule_client(self, client_id: str) -> None:
@@ -35,10 +50,11 @@ class MultiTenantScheduler:
         # Remove existing job if any
         try:
             self.scheduler.remove_job(job_id)
+            print(f"[SCHEDULER] Job existente removido: {job_id}")
         except JobLookupError:
             pass
 
-        self.scheduler.add_job(
+        job = self.scheduler.add_job(
             self._fetch_client,
             "interval",
             hours=2,
@@ -46,7 +62,10 @@ class MultiTenantScheduler:
             args=[client_id],
             replace_existing=True,
         )
-        print(f"[SCHEDULER] Job agendado para cliente {client_id}")
+        print(f"[SCHEDULER] ✓ Job agendado para cliente {client_id}")
+        print(f"[SCHEDULER]   - Job ID: {job.id}")
+        print(f"[SCHEDULER]   - Intervalo: 2 horas")
+        print(f"[SCHEDULER]   - Próxima execução: {job.next_run_time}")
 
     def add_client_job(self, client_id: str, run_now: bool = True) -> None:
         """Adds a new client job. Optionally triggers an immediate fetch."""
@@ -73,12 +92,14 @@ class MultiTenantScheduler:
 
     def _fetch_client(self, client_id: str) -> None:
         """Actual fetch logic for a single client."""
+        print(f"[SCHEDULER] 🔄 _fetch_client() chamado em {datetime.now()} para client_id={client_id}")
+        
         client = self.client_manager.get_client(client_id)
         if not client:
-            print(f"[SCHEDULER] Cliente {client_id} não encontrado, pulando fetch")
+            print(f"[SCHEDULER] ❌ Cliente {client_id} não encontrado, pulando fetch")
             return
 
-        print(f"[SCHEDULER] Iniciando fetch para cliente '{client.name}' ({client.slug})")
+        print(f"[SCHEDULER] ✓ Iniciando fetch para cliente '{client.name}' ({client.slug})")
         output_path = self.client_manager.get_client_data_path(client.slug)
 
         try:

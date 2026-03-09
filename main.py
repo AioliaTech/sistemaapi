@@ -46,12 +46,18 @@ scheduler = MultiTenantScheduler(client_manager)
 
 @app.on_event("startup")
 def on_startup():
+    print("=" * 80)
+    print(f"[APP] ⚡ STARTUP EVENT TRIGGERED em {datetime.now()}")
+    print("=" * 80)
     scheduler.start()
-    print("[APP] RevendAI Multi-Tenant Platform iniciado")
+    print("[APP] ✓ RevendAI Multi-Tenant Platform iniciado")
+    print("=" * 80)
 
 @app.on_event("shutdown")
 def on_shutdown():
+    print(f"[APP] 🛑 SHUTDOWN EVENT TRIGGERED em {datetime.now()}")
     scheduler.shutdown()
+    print("[APP] ✓ Scheduler desligado")
 
 # ─── Pydantic models ──────────────────────────────────────────────────────────
 

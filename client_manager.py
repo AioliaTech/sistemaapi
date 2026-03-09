@@ -65,15 +65,20 @@ class ClientManager:
 
     def _load_registry(self) -> None:
         with self._lock:
+            print(f"[CLIENT_MANAGER] 📂 Carregando registry de {CLIENTS_REGISTRY}")
             if CLIENTS_REGISTRY.exists():
                 try:
                     with open(CLIENTS_REGISTRY, "r", encoding="utf-8") as f:
                         raw = json.load(f)
                     self._clients = [ClientConfig.from_dict(c) for c in raw]
+                    print(f"[CLIENT_MANAGER] ✓ {len(self._clients)} cliente(s) carregado(s)")
+                    for client in self._clients:
+                        print(f"[CLIENT_MANAGER]   - {client.name} ({client.slug}) - status: {client.status}")
                 except Exception as e:
-                    print(f"[WARN] Erro ao carregar registry: {e}")
+                    print(f"[CLIENT_MANAGER] ❌ Erro ao carregar registry: {e}")
                     self._clients = []
             else:
+                print(f"[CLIENT_MANAGER] ⚠️  Registry não existe em {CLIENTS_REGISTRY}, criando novo")
                 self._clients = []
                 self._save_registry_locked()
 
