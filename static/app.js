@@ -216,7 +216,15 @@ document.getElementById('form-create')?.addEventListener('submit', async (e) => 
   const source_url = document.getElementById('create-url').value.trim();
   const custom_urls = document.getElementById('create-custom-urls').value.trim();
 
-  if (!name || !source_url) return;
+  if (!name) {
+    showToast('Nome do cliente é obrigatório', 'error');
+    return;
+  }
+  
+  if (!source_url && !custom_urls) {
+    showToast('Preencha a URL da Fonte ou Custom URLs', 'error');
+    return;
+  }
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Criando...';
@@ -280,7 +288,15 @@ document.getElementById('form-edit')?.addEventListener('submit', async (e) => {
   const source_url = document.getElementById('edit-url').value.trim();
   const custom_urls = document.getElementById('edit-custom-urls').value.trim();
 
-  if (!name || !source_url) return;
+  if (!name) {
+    showToast('Nome do cliente é obrigatório', 'error');
+    return;
+  }
+  
+  if (!source_url && !custom_urls) {
+    showToast('Preencha a URL da Fonte ou Custom URLs', 'error');
+    return;
+  }
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Salvando...';
