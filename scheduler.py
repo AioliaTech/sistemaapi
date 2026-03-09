@@ -6,8 +6,9 @@ Each client gets its own background job that runs every 2 hours.
 import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.base import JobLookupError
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
+import pytz
 
 if TYPE_CHECKING:
     from client_manager import ClientManager
@@ -18,12 +19,15 @@ from xml_fetcher import fetch_for_client
 class MultiTenantScheduler:
     def __init__(self, client_manager: "ClientManager"):
         self.client_manager = client_manager
-        self.scheduler = BackgroundScheduler(timezone="America/Sao_Paulo")
-        print(f"[SCHEDULER] ✓ Scheduler inicializado em {datetime.now()}")
+        self.timezone = pytz.timezone("America/Sao_Paulo")
+        self.scheduler = BackgroundScheduler(timezone=self.timezone)
+        now_local = datetime.now(self.timezone)
+        print(f"[SCHEDULER] ✓ Scheduler inicializado em {now_local}")
 
     def start(self) -> None:
         """Starts the scheduler and schedules jobs for all existing clients."""
-        print(f"[SCHEDULER] ⚡ Método start() chamado em {datetime.now()}")
+        now_local = datetime.now(self.timezone)
+        print(f"[SCHEDULER] ⚡ Método start() chamado em {now_local}")
         self.scheduler.start()
         print(f"[SCHEDULER] ✓ BackgroundScheduler.start() executado, running={self.scheduler.running}")
         
@@ -44,7 +48,7 @@ class MultiTenantScheduler:
         
         print("[SCHEDULER] Todos os jobs agendados")
 
-    def _schedule_client(self, client_id: str) -> None:
+    def _schedule_client(self, client_id: str, run_immediately: bool = True) -> None:
         """Schedules a 2-hour interval job for a client."""
         job_id = f"fetch_{client_id}"
         # Remove existing job if any
@@ -54,6 +58,10 @@ class MultiTenantScheduler:
         except JobLookupError:
             pass
 
+        # Se run_immediately=True, agenda para executar agora + a cada 2 horas
+        # Se run_immediately=False, agenda apenas para daqui a 2 horas
+        next_run = datetime.now(self.timezone) if run_immediately else None
+        
         job = self.scheduler.add_job(
             self._fetch_client,
             "interval",
@@ -61,17 +69,20 @@ class MultiTenantScheduler:
             id=job_id,
             args=[client_id],
             replace_existing=True,
+            next_run_time=next_run,
         )
         print(f"[SCHEDULER] ✓ Job agendado para cliente {client_id}")
         print(f"[SCHEDULER]   - Job ID: {job.id}")
         print(f"[SCHEDULER]   - Intervalo: 2 horas")
         print(f"[SCHEDULER]   - Próxima execução: {job.next_run_time}")
+        if run_immediately:
+            print(f"[SCHEDULER]   - ⚡ Executará IMEDIATAMENTE e depois a cada 2 horas")
 
     def add_client_job(self, client_id: str, run_now: bool = True) -> None:
         """Adds a new client job. Optionally triggers an immediate fetch."""
-        self._schedule_client(client_id)
-        if run_now:
-            self.trigger_now(client_id)
+        # O parâmetro run_immediately do _schedule_client já faz o job executar imediatamente
+        # Então não precisamos chamar trigger_now() separadamente
+        self._schedule_client(client_id, run_immediately=run_now)
 
     def remove_client_job(self, client_id: str) -> None:
         """Removes the job for a deleted client."""
@@ -92,7 +103,8 @@ class MultiTenantScheduler:
 
     def _fetch_client(self, client_id: str) -> None:
         """Actual fetch logic for a single client."""
-        print(f"[SCHEDULER] 🔄 _fetch_client() chamado em {datetime.now()} para client_id={client_id}")
+        now_local = datetime.now(self.timezone)
+        print(f"[SCHEDULER] 🔄 _fetch_client() chamado em {now_local} para client_id={client_id}")
         
         client = self.client_manager.get_client(client_id)
         if not client:
