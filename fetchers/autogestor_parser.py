@@ -43,14 +43,19 @@ class AutogestorParser(BaseParser):
         parsed_vehicles = []
         for v in veiculos:
             # Filtra veículos que não devem ser anunciados
-            if v.get("anunciar", "").lower() == "nao":
+            anunciar_value = v.get("anunciar") or ""
+            if anunciar_value.lower() == "nao":
                 continue
             
-            marca = v.get("marca", "").strip()
-            modelo = v.get("modelo", "").strip()
-            versao = v.get("versao", "").strip()
-            titulo = v.get("titulo", "").strip()
-            carroceria = v.get("carroceria", "").strip()
+            # Função auxiliar para garantir que None vire string vazia antes do strip
+            def safe_strip(value):
+                return (value or "").strip()
+            
+            marca = safe_strip(v.get("marca"))
+            modelo = safe_strip(v.get("modelo"))
+            versao = safe_strip(v.get("versao"))
+            titulo = safe_strip(v.get("titulo"))
+            carroceria = safe_strip(v.get("carroceria"))
             acessorios_list = v.get("acessorios", [])
             opcionais_str = self._parse_acessorios(acessorios_list)
             
@@ -115,8 +120,8 @@ class AutogestorParser(BaseParser):
         if not acessorios or not isinstance(acessorios, list):
             return ""
         
-        # Filtra itens vazios e junta com vírgula
-        items = [item.strip() for item in acessorios if item and item.strip()]
+        # Filtra itens vazios e junta com vírgula, garantindo que None não cause erro
+        items = [(item or "").strip() for item in acessorios if item and (item or "").strip()]
         return ", ".join(items)
     
     def _extract_motor_from_version(self, versao: str) -> str:
@@ -124,6 +129,11 @@ class AutogestorParser(BaseParser):
         if not versao:
             return None
         
+        # Garante que versao é string antes de chamar strip
+        versao_str = str(versao) if versao else ""
+        if not versao_str:
+            return None
+        
         # Pega a primeira palavra da versão que geralmente é o motor
-        words = versao.strip().split()
+        words = versao_str.strip().split()
         return words[0] if words else None
