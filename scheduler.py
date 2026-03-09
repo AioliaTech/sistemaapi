@@ -25,7 +25,7 @@ class MultiTenantScheduler:
         print(f"[SCHEDULER] ✓ Scheduler inicializado em {now_local}")
 
     def start(self) -> None:
-        """Starts the scheduler and schedules jobs for all existing clients."""
+        """Starts the scheduler and schedules a single job that updates ALL clients every 2 hours."""
         now_local = datetime.now(self.timezone)
         print(f"[SCHEDULER] ⚡ Método start() chamado em {now_local}")
         self.scheduler.start()
@@ -35,10 +35,14 @@ class MultiTenantScheduler:
         print(f"[SCHEDULER] Iniciando com {len(clients)} cliente(s)")
         
         if len(clients) == 0:
-            print("[SCHEDULER] ⚠️  AVISO: Nenhum cliente encontrado! Nenhum job será agendado.")
+            print("[SCHEDULER] ⚠️  AVISO: Nenhum cliente encontrado!")
         
-        for client in clients:
-            self._schedule_client(client.id)
+        # Agendar UM ÚNICO JOB que atualiza TODOS os clientes a cada 2 horas
+        self._schedule_all_clients_job()
+        
+        # Executar IMEDIATAMENTE a primeira vez
+        print(f"[SCHEDULER] ⚡ Executando atualização inicial de TODOS os clientes...")
+        self._fetch_all_clients()
         
         # Log all scheduled jobs
         jobs = self.scheduler.get_jobs()
@@ -48,50 +52,71 @@ class MultiTenantScheduler:
         
         print("[SCHEDULER] Todos os jobs agendados")
 
-    def _schedule_client(self, client_id: str, run_immediately: bool = True) -> None:
-        """Schedules a 2-hour interval job for a client."""
-        job_id = f"fetch_{client_id}"
+    def _schedule_all_clients_job(self) -> None:
+        """Schedules a single job that updates ALL clients every 2 hours."""
+        job_id = "fetch_all_clients"
         # Remove existing job if any
         try:
             self.scheduler.remove_job(job_id)
             print(f"[SCHEDULER] Job existente removido: {job_id}")
         except JobLookupError:
             pass
-
-        # Se run_immediately=True, agenda para executar agora + a cada 2 horas
-        # Se run_immediately=False, agenda apenas para daqui a 2 horas
-        next_run = datetime.now(self.timezone) if run_immediately else None
         
         job = self.scheduler.add_job(
-            self._fetch_client,
+            self._fetch_all_clients,
             "interval",
             hours=2,
             id=job_id,
-            args=[client_id],
             replace_existing=True,
-            next_run_time=next_run,
         )
-        print(f"[SCHEDULER] ✓ Job agendado para cliente {client_id}")
+        print(f"[SCHEDULER] ✓ Job global agendado: atualizar TODOS os clientes a cada 2 horas")
         print(f"[SCHEDULER]   - Job ID: {job.id}")
         print(f"[SCHEDULER]   - Intervalo: 2 horas")
         print(f"[SCHEDULER]   - Próxima execução: {job.next_run_time}")
-        if run_immediately:
-            print(f"[SCHEDULER]   - ⚡ Executará IMEDIATAMENTE e depois a cada 2 horas")
+    
+    def _fetch_all_clients(self) -> None:
+        """Fetches data for ALL clients at once."""
+        now_local = datetime.now(self.timezone)
+        print("=" * 80)
+        print(f"[SCHEDULER] 🔄 ATUALIZAÇÃO GLOBAL iniciada em {now_local}")
+        print("=" * 80)
+        
+        clients = self.client_manager.list_clients()
+        total = len(clients)
+        success = 0
+        errors = 0
+        
+        print(f"[SCHEDULER] Atualizando {total} cliente(s)...")
+        
+        for i, client in enumerate(clients, 1):
+            try:
+                print(f"[SCHEDULER] [{i}/{total}] Processando '{client.name}' ({client.slug})...")
+                self._fetch_client(client.id)
+                success += 1
+            except Exception as e:
+                errors += 1
+                print(f"[SCHEDULER] ❌ Erro ao processar '{client.name}': {e}")
+        
+        print("=" * 80)
+        print(f"[SCHEDULER] ✓ ATUALIZAÇÃO GLOBAL concluída!")
+        print(f"[SCHEDULER]   - Total: {total} clientes")
+        print(f"[SCHEDULER]   - Sucesso: {success}")
+        print(f"[SCHEDULER]   - Erros: {errors}")
+        print(f"[SCHEDULER]   - Próxima atualização: {datetime.now(self.timezone) + timedelta(hours=2)}")
+        print("=" * 80)
 
     def add_client_job(self, client_id: str, run_now: bool = True) -> None:
-        """Adds a new client job. Optionally triggers an immediate fetch."""
-        # O parâmetro run_immediately do _schedule_client já faz o job executar imediatamente
-        # Então não precisamos chamar trigger_now() separadamente
-        self._schedule_client(client_id, run_immediately=run_now)
+        """Adds a new client. Optionally triggers an immediate fetch."""
+        # Não precisamos mais agendar jobs individuais
+        # O job global já vai pegar este cliente na próxima execução
+        if run_now:
+            self.trigger_now(client_id)
+        print(f"[SCHEDULER] Cliente adicionado. Será incluído na próxima atualização global.")
 
     def remove_client_job(self, client_id: str) -> None:
-        """Removes the job for a deleted client."""
-        job_id = f"fetch_{client_id}"
-        try:
-            self.scheduler.remove_job(job_id)
-            print(f"[SCHEDULER] Job removido para cliente {client_id}")
-        except JobLookupError:
-            pass
+        """Removes a client. No action needed since we use a global job."""
+        # Não precisamos mais remover jobs individuais
+        print(f"[SCHEDULER] Cliente removido. Será excluído da próxima atualização global.")
 
     def trigger_now(self, client_id: str) -> None:
         """Triggers an immediate fetch for a client (redeploy)."""
@@ -103,15 +128,10 @@ class MultiTenantScheduler:
 
     def _fetch_client(self, client_id: str) -> None:
         """Actual fetch logic for a single client."""
-        now_local = datetime.now(self.timezone)
-        print(f"[SCHEDULER] 🔄 _fetch_client() chamado em {now_local} para client_id={client_id}")
-        
         client = self.client_manager.get_client(client_id)
         if not client:
             print(f"[SCHEDULER] ❌ Cliente {client_id} não encontrado, pulando fetch")
             return
-
-        print(f"[SCHEDULER] ✓ Iniciando fetch para cliente '{client.name}' ({client.slug})")
         output_path = self.client_manager.get_client_data_path(client.slug)
 
         try:
