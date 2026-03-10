@@ -18,10 +18,6 @@ from .vehicle_categorizer import VehicleCategorizer
 class BaseParser(ABC):
     """Classe base abstrata para todos os parsers de veículos"""
     
-    def __init__(self):
-        """Inicializa o parser com o categorizador centralizado"""
-        self.categorizer = VehicleCategorizer()
-    
     @abstractmethod
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se este parser pode processar os dados da URL fornecida"""
@@ -39,11 +35,21 @@ class BaseParser(ABC):
         vehicle["fotos"] = self.normalize_fotos(fotos)
         
         # Categoriza automaticamente se não tiver categoria válida
-        # Isso ajuda a preencher categorias vazias, mas não é obrigatório
+        # Usa try/except para garantir que NUNCA cause erro
         categoria_atual = vehicle.get("categoria")
         if not categoria_atual or categoria_atual in [None, "", "Não informado"]:
-            categoria_inferida = self.categorizer.categorize(vehicle)
-            vehicle["categoria"] = categoria_inferida
+            try:
+                # Lazy initialization - cria categorizer só quando necessário
+                if not hasattr(self, 'categorizer'):
+                    self.categorizer = VehicleCategorizer()
+                
+                categoria_inferida = self.categorizer.categorize(vehicle)
+                vehicle["categoria"] = categoria_inferida
+            except Exception as e:
+                # Se der erro na categorização, apenas loga e continua
+                # NÃO propaga o erro - veículo fica sem categoria
+                print(f"[WARN] Erro ao categorizar veículo {vehicle.get('id')}: {e}")
+                vehicle["categoria"] = None
         
         return {
             "id": vehicle.get("id"), 
