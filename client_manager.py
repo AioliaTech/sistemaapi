@@ -245,3 +245,45 @@ class ClientManager:
         except Exception as e:
             print(f"[ERRO] Erro ao carregar dados do cliente {slug}: {e}")
             return None
+    
+    def get_categorization_stats(self, slug: str) -> Dict[str, Any]:
+        """
+        Retorna estatísticas de categorização para um cliente.
+        
+        Returns:
+            {
+                "total": 100,
+                "sem_categoria": 5,
+                "percentual_sem_categoria": 5.0
+            }
+        """
+        data_file = self.get_client_data_file(slug)
+        if not data_file.exists():
+            return {"total": 0, "sem_categoria": 0, "percentual_sem_categoria": 0.0}
+        
+        try:
+            with open(data_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            veiculos = data.get("veiculos", [])
+            total = len(veiculos)
+            
+            if total == 0:
+                return {"total": 0, "sem_categoria": 0, "percentual_sem_categoria": 0.0}
+            
+            # Conta veículos sem categoria ou com categoria None/vazia
+            sem_categoria = sum(
+                1 for v in veiculos 
+                if not v.get("categoria") or v.get("categoria") in [None, "", "Não informado"]
+            )
+            
+            percentual = (sem_categoria / total) * 100 if total > 0 else 0.0
+            
+            return {
+                "total": total,
+                "sem_categoria": sem_categoria,
+                "percentual_sem_categoria": round(percentual, 1)
+            }
+        except Exception as e:
+            print(f"[ERRO] Erro ao calcular stats de categorização para {slug}: {e}")
+            return {"total": 0, "sem_categoria": 0, "percentual_sem_categoria": 0.0}

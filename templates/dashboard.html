@@ -48,6 +48,8 @@
           <th>Nome / Slug</th>
           <th>Parser</th>
           <th>Status</th>
+          <th style="text-align:center">Veículos</th>
+          <th style="text-align:center">Sem Categoria</th>
           <th>Última Atualização</th>
           <th class="base-url-cell">URL Base</th>
           <th style="text-align:right">Ações</th>
@@ -71,6 +73,21 @@
                   {% if client.vehicle_count == 0 %}0 veículos{% else %}Erro{% endif %}
                 {% else %}Pendente{% endif %}
               </span>
+            </td>
+            <td style="text-align:center">
+              <span class="vehicle-count">{{ client.vehicle_count or 0 }}</span>
+            </td>
+            <td style="text-align:center">
+              {% set stats = client.categorization_stats %}
+              {% if stats.sem_categoria > 0 %}
+                <span class="uncategorized-badge warning" 
+                      title="{{ stats.percentual_sem_categoria }}% sem categoria">
+                  {{ stats.sem_categoria }}
+                  <span class="percentage">({{ stats.percentual_sem_categoria }}%)</span>
+                </span>
+              {% else %}
+                <span class="uncategorized-badge success">✓ 0</span>
+              {% endif %}
             </td>
             <td>
               <span class="updated-at" data-iso="{{ client.last_updated_at or '' }}">
@@ -97,7 +114,7 @@
           {% endfor %}
         {% else %}
           <tr id="empty-state">
-            <td colspan="6">
+            <td colspan="8">
               <div class="empty-state">
                 <div class="empty-icon">🔌</div>
                 <h3>Nenhuma API cadastrada</h3>

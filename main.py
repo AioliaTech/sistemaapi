@@ -122,10 +122,14 @@ def dashboard(request: Request, _auth=Depends(require_auth)):
         if c.status == "running" and c.vehicle_count == 0:
             status = "error"
         
+        # Adiciona estatísticas de categorização
+        cat_stats = client_manager.get_categorization_stats(c.slug)
+        
         clients_data.append({
             **c.to_dict(),
             "status": status,
             "base_url": f"{BASE_URL}/{c.slug}",
+            "categorization_stats": cat_stats,
         })
     
     # Sort: errors first, then by alphabetical order within each status
