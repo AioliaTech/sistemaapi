@@ -45,6 +45,16 @@ class BoomParser(BaseParser):
                 )
                 tipo_final = "moto"
             else:
+                # Processa opcionais ANTES da categorização (necessário para detectar hatch/sedan)
+                opcionais_str = ""
+                opcional = v.get('opcional')
+                if opcional and isinstance(opcional, dict) and 'item' in opcional:
+                    items = opcional['item']
+                    if isinstance(items, list):
+                        opcionais_str = ", ".join(str(item) for item in items if item)
+                    elif items:
+                        opcionais_str = str(items)
+                
                 # HIERARQUIA DE CATEGORIZAÇÃO:
                 # 1. Busca "hatch" ou "sedan" em titulo e modelo
                 texto_busca = f"{titulo_veiculo or ''} {modelo_veiculo or ''}".upper()
@@ -54,7 +64,8 @@ class BoomParser(BaseParser):
                     categoria_final = "Sedan"
                 else:
                     # 2. Infere do nosso mapeamento com sistema de scoring
-                    categoria_final = self.definir_categoria_veiculo(modelo_veiculo, "")
+                    # IMPORTANTE: Passa opcionais_str para detectar "limpador traseiro"
+                    categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_str)
                 
                 cilindrada_final = None
                 tipo_final = tipo_veiculo
@@ -68,16 +79,6 @@ class BoomParser(BaseParser):
                     fotos = [item for item in items if item]
                 elif items:
                     fotos = [items]
-            
-            # Processa opcionais
-            opcionais_str = ""
-            opcional = v.get('opcional')
-            if opcional and isinstance(opcional, dict) and 'item' in opcional:
-                items = opcional['item']
-                if isinstance(items, list):
-                    opcionais_str = ", ".join(str(item) for item in items if item)
-                elif items:
-                    opcionais_str = str(items)
             
             parsed = self.normalize_vehicle({
                 "id": v.get('id'),
