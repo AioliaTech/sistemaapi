@@ -38,7 +38,8 @@ class BaseParser(ABC):
         fotos = vehicle.get("fotos", [])
         vehicle["fotos"] = self.normalize_fotos(fotos)
         
-        # NOVA LÓGICA: Categoriza automaticamente se não tiver categoria válida
+        # Categoriza automaticamente se não tiver categoria válida
+        # Isso ajuda a preencher categorias vazias, mas não é obrigatório
         categoria_atual = vehicle.get("categoria")
         if not categoria_atual or categoria_atual in [None, "", "Não informado"]:
             categoria_inferida = self.categorizer.categorize(vehicle)

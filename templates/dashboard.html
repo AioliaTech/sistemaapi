@@ -81,12 +81,11 @@
               {% set stats = client.categorization_stats %}
               {% if stats.sem_categoria > 0 %}
                 <span class="uncategorized-badge warning" 
-                      title="{{ stats.percentual_sem_categoria }}% sem categoria">
+                      title="{{ stats.sem_categoria }} veículos sem categoria mapeada">
                   {{ stats.sem_categoria }}
-                  <span class="percentage">({{ stats.percentual_sem_categoria }}%)</span>
                 </span>
               {% else %}
-                <span class="uncategorized-badge success">✓ 0</span>
+                <span class="uncategorized-badge success">0</span>
               {% endif %}
             </td>
             <td>
