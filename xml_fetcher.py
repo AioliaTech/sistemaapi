@@ -31,7 +31,8 @@ from fetchers import (
     AdmycarParser,
     AutogestorParser,
     NetcarParser,
-    WordPressParser
+    WordPressParser,
+    ItcarParser
 )
 
 
@@ -59,7 +60,8 @@ class UnifiedVehicleFetcher:
             CarburgoParser(),
             WordPressParser(),
             AdmycarParser(),
-            LojaConectadaParser()
+            LojaConectadaParser(),
+            ItcarParser()
         ]
         self.last_parser_used: Optional[str] = None
 
