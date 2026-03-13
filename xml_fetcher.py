@@ -96,13 +96,18 @@ class UnifiedVehicleFetcher:
             print(f"[DEBUG] Erro ao parsear JSON: {e}")
             print(f"[DEBUG] Primeiros 500 caracteres: {content_str[:500]}")
             
-            # Tenta corrigir trailing commas no JSON
+            # Tenta corrigir problemas comuns no JSON
             try:
                 # Remove trailing commas antes de ] ou }
                 fixed_content = re.sub(r',\s*([}\]])', r'\1', content_str)
+                
+                # Remove caracteres de controle inválidos (tabs, newlines dentro de strings)
+                # Mantém apenas espaços, mas remove \t, \n, \r dentro de valores de string
+                fixed_content = re.sub(r'[\x00-\x1f\x7f]', ' ', fixed_content)
+                
                 return json.loads(fixed_content), "json"
             except json.JSONDecodeError as e2:
-                print(f"[DEBUG] Erro após correção de trailing commas: {e2}")
+                print(f"[DEBUG] Erro após correções: {e2}")
                 
                 # Tenta parsear como XML
                 try:
