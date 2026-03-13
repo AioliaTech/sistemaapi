@@ -67,14 +67,29 @@ class UnifiedVehicleFetcher:
 
     def detect_format(self, content: bytes, url: str) -> tuple[Any, str]:
         """Detecta se o conteúdo é JSON ou XML"""
-        content_str = content.decode('utf-8', errors='ignore')
+        # Remove BOM se presente
+        if content.startswith(b'\xef\xbb\xbf'):
+            content = content[3:]
+        
+        content_str = content.decode('utf-8', errors='ignore').strip()
+        
         try:
             return json.loads(content_str), "json"
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            # Tenta corrigir trailing commas no JSON
+            print(f"[DEBUG] Erro ao parsear JSON: {e}")
             try:
-                return xmltodict.parse(content_str), "xml"
-            except Exception:
-                raise ValueError(f"Formato não reconhecido para URL: {url}")
+                import re
+                # Remove trailing commas antes de ] ou }
+                fixed_content = re.sub(r',\s*([}\]])', r'\1', content_str)
+                return json.loads(fixed_content), "json"
+            except json.JSONDecodeError:
+                print(f"[DEBUG] Primeiros 200 caracteres: {content_str[:200]}")
+                try:
+                    return xmltodict.parse(content_str), "xml"
+                except Exception as xml_error:
+                    print(f"[DEBUG] Erro ao parsear XML: {xml_error}")
+                    raise ValueError(f"Formato não reconhecido para URL: {url}")
 
     def select_parser(self, data: Any, url: str) -> Optional[object]:
         """Seleciona o parser apropriado baseado na URL"""
