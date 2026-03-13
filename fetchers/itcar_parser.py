@@ -11,12 +11,16 @@ class ItcarParser(BaseParser):
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do ItCar"""
-        # Verifica se é ItCar pela URL (aws.it-car.com.br)
-        if "aws.it-car.com.br" in url.lower():
+        # Verifica pela URL (it-car.com.br - cobre aws.it-car.com.br e outras variações)
+        if url and "it-car.com.br" in url.lower():
             return True
         
-        # Verifica pela estrutura do JSON (tem chave "Veiculos")
+        # Verifica pela estrutura do JSON (dict já parseado)
         if isinstance(data, dict) and "Veiculos" in data:
+            return True
+        
+        # Verifica se data é string (JSON ainda não parseado)
+        if isinstance(data, str) and '"Veiculos"' in data:
             return True
         
         return False

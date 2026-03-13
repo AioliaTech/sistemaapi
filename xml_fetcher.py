@@ -67,28 +67,49 @@ class UnifiedVehicleFetcher:
 
     def detect_format(self, content: bytes, url: str) -> tuple[Any, str]:
         """Detecta se o conteúdo é JSON ou XML"""
-        # Remove BOM se presente
+        import re
+        
+        # Remove BOM se presente (UTF-8, UTF-16, UTF-32)
         if content.startswith(b'\xef\xbb\xbf'):
             content = content[3:]
+        elif content.startswith(b'\xff\xfe') or content.startswith(b'\xfe\xff'):
+            content = content[2:]
+        elif content.startswith(b'\x00\x00\xfe\xff') or content.startswith(b'\xff\xfe\x00\x00'):
+            content = content[4:]
         
-        content_str = content.decode('utf-8', errors='ignore').strip()
+        # Tenta diferentes encodings
+        content_str = None
+        for encoding in ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252']:
+            try:
+                content_str = content.decode(encoding).strip()
+                break
+            except (UnicodeDecodeError, AttributeError):
+                continue
         
+        if not content_str:
+            content_str = content.decode('utf-8', errors='ignore').strip()
+        
+        # Tenta parsear como JSON
         try:
             return json.loads(content_str), "json"
         except json.JSONDecodeError as e:
-            # Tenta corrigir trailing commas no JSON
             print(f"[DEBUG] Erro ao parsear JSON: {e}")
+            print(f"[DEBUG] Primeiros 500 caracteres: {content_str[:500]}")
+            
+            # Tenta corrigir trailing commas no JSON
             try:
-                import re
                 # Remove trailing commas antes de ] ou }
                 fixed_content = re.sub(r',\s*([}\]])', r'\1', content_str)
                 return json.loads(fixed_content), "json"
-            except json.JSONDecodeError:
-                print(f"[DEBUG] Primeiros 200 caracteres: {content_str[:200]}")
+            except json.JSONDecodeError as e2:
+                print(f"[DEBUG] Erro após correção de trailing commas: {e2}")
+                
+                # Tenta parsear como XML
                 try:
                     return xmltodict.parse(content_str), "xml"
                 except Exception as xml_error:
                     print(f"[DEBUG] Erro ao parsear XML: {xml_error}")
+                    print(f"[DEBUG] Últimos 200 caracteres: {content_str[-200:]}")
                     raise ValueError(f"Formato não reconhecido para URL: {url}")
 
     def select_parser(self, data: Any, url: str) -> Optional[object]:
