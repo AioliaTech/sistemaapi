@@ -1,6 +1,8 @@
 """
 scheduler.py — Multi-tenant APScheduler manager.
-Each client gets its own background job that runs every 2 hours.
+A single background cron job updates ALL clients at fixed even hours:
+00:00, 02:00, 04:00, 06:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 (America/Sao_Paulo).
+On startup/redeploy, existing data.json files are preserved — no re-parse is forced.
 """
 
 import threading
@@ -25,7 +27,7 @@ class MultiTenantScheduler:
         print(f"[SCHEDULER] ✓ Scheduler inicializado em {now_local}")
 
     def start(self) -> None:
-        """Starts the scheduler and schedules a single job that updates ALL clients every 2 hours."""
+        """Starts the scheduler and schedules a single cron job that updates ALL clients at fixed even hours."""
         now_local = datetime.now(self.timezone)
         print(f"[SCHEDULER] ⚡ Método start() chamado em {now_local}")
         self.scheduler.start()
@@ -37,12 +39,12 @@ class MultiTenantScheduler:
         if len(clients) == 0:
             print("[SCHEDULER] ⚠️  AVISO: Nenhum cliente encontrado!")
         
-        # Agendar UM ÚNICO JOB que atualiza TODOS os clientes a cada 2 horas
+        # Agendar UM ÚNICO JOB com horários fixos (cron) — não executa imediatamente no startup
         self._schedule_all_clients_job()
         
-        # Executar IMEDIATAMENTE a primeira vez
-        print(f"[SCHEDULER] ⚡ Executando atualização inicial de TODOS os clientes...")
-        self._fetch_all_clients()
+        # NÃO executa fetch imediato no startup para não re-parsear dados existentes.
+        # Os dados persistidos no volume Docker são mantidos até o próximo cron.
+        print(f"[SCHEDULER] ℹ️  Startup sem re-parse: dados existentes serão mantidos até o próximo cron.")
         
         # Log all scheduled jobs
         jobs = self.scheduler.get_jobs()
@@ -53,7 +55,7 @@ class MultiTenantScheduler:
         print("[SCHEDULER] Todos os jobs agendados")
 
     def _schedule_all_clients_job(self) -> None:
-        """Schedules a single job that updates ALL clients every 2 hours."""
+        """Schedules a single cron job that updates ALL clients at fixed even hours (00,02,04,...,22)."""
         job_id = "fetch_all_clients"
         # Remove existing job if any
         try:
@@ -64,14 +66,16 @@ class MultiTenantScheduler:
         
         job = self.scheduler.add_job(
             self._fetch_all_clients,
-            "interval",
-            hours=2,
+            "cron",
+            hour="0,2,4,6,8,10,12,14,16,18,20,22",
+            minute=0,
+            second=0,
             id=job_id,
             replace_existing=True,
         )
-        print(f"[SCHEDULER] ✓ Job global agendado: atualizar TODOS os clientes a cada 2 horas")
+        print(f"[SCHEDULER] ✓ Job global agendado: atualizar TODOS os clientes nos horários fixos (00,02,04,...,22h)")
         print(f"[SCHEDULER]   - Job ID: {job.id}")
-        print(f"[SCHEDULER]   - Intervalo: 2 horas")
+        print(f"[SCHEDULER]   - Trigger: cron (horários fixos do dia)")
         print(f"[SCHEDULER]   - Próxima execução: {job.next_run_time}")
     
     def _fetch_all_clients(self) -> None:
