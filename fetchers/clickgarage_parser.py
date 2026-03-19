@@ -11,10 +11,27 @@ class ClickGarageParser(BaseParser):
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do ClickGarage"""
-        return "clickgarage.com.br" in url.lower()
+        if "clickgarage.com.br" in url.lower():
+            return True
+        
+        # Detecta formato JSON do ClickGarage (lista de veículos com campo "galeria")
+        if isinstance(data, list) and len(data) > 0:
+            primeiro = data[0]
+            if isinstance(primeiro, dict) and "galeria" in primeiro and "imagem_principal" in primeiro:
+                return True
+        
+        return False
     
     def parse(self, data: Any, url: str) -> List[Dict]:
-        """Processa dados do ClickGarage"""
+        """Processa dados do ClickGarage (XML ou JSON)"""
+        # Detecta se é JSON (lista) ou XML (dict com estoque)
+        if isinstance(data, list):
+            return self._parse_json(data, url)
+        else:
+            return self._parse_xml(data, url)
+    
+    def _parse_xml(self, data: Any, url: str) -> List[Dict]:
+        """Processa dados do ClickGarage no formato XML"""
         estoque = data.get("estoque", {})
         veiculos = estoque.get("veiculo", [])
         
@@ -75,6 +92,60 @@ class ClickGarageParser(BaseParser):
                 "preco": self.converter_preco(v.get("preco")),
                 "opcionais": opcionais_processados,
                 "fotos": self._extract_photos_clickgarage(v)
+            })
+            
+            parsed_vehicles.append(parsed)
+        
+        return parsed_vehicles
+    
+    def _parse_json(self, data: List[Dict], url: str) -> List[Dict]:
+        """Processa dados do ClickGarage no formato JSON"""
+        parsed_vehicles = []
+        
+        for v in data:
+            if not isinstance(v, dict):
+                continue
+            
+            marca = (v.get("marca") or "").strip()
+            modelo_base = (v.get("modelo_base") or "").strip()
+            modelo_completo = (v.get("modelo") or "").strip()
+            
+            # Processa opcionais (campo "acessorios" no JSON)
+            opcionais_processados = self._parse_opcionais_json(v.get("acessorios", []))
+            
+            # Determina se é moto ou carro
+            tipo_veiculo = (v.get("tipo") or "").lower()
+            is_moto = "moto" in tipo_veiculo or "motocicleta" in tipo_veiculo
+            
+            if is_moto:
+                cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(modelo_base, modelo_completo)
+                tipo_final = "moto"
+            else:
+                categoria_final = self.definir_categoria_veiculo(modelo_base, opcionais_processados, modelo_completo)
+                cilindrada_final = None
+                tipo_final = "carro"
+            
+            parsed = self.normalize_vehicle({
+                "id": v.get("id"),
+                "tipo": tipo_final,
+                "titulo": v.get("titulo"),
+                "versao": modelo_completo,
+                "marca": marca,
+                "modelo": modelo_base,
+                "ano": v.get("ano_modelo"),
+                "ano_fabricacao": v.get("ano_fabricacao"),
+                "km": v.get("km"),
+                "cor": v.get("cor"),
+                "combustivel": v.get("combustivel"),
+                "cambio": v.get("cambio"),
+                "motor": v.get("motor"),
+                "portas": v.get("portas"),
+                "categoria": categoria_final,
+                "cilindrada": cilindrada_final,
+                "preco": self.converter_preco(v.get("valor")),
+                "opcionais": opcionais_processados,
+                "observacao": v.get("obs"),
+                "fotos": self._extract_photos_json(v)
             })
             
             parsed_vehicles.append(parsed)
@@ -184,3 +255,37 @@ class ClickGarageParser(BaseParser):
             return "manual"
         
         return None
+    
+    def _parse_opcionais_json(self, acessorios: List) -> str:
+        """
+        Processa os acessórios do ClickGarage JSON (lista de strings)
+        Exemplo: ["Alarme", "Ar condicionado", ...] -> "Alarme, Ar condicionado, ..."
+        """
+        if not acessorios or not isinstance(acessorios, list):
+            return ""
+        
+        items = [item.strip() for item in acessorios if isinstance(item, str) and item.strip()]
+        return ", ".join(items)
+    
+    def _extract_photos_json(self, veiculo: Dict) -> List[str]:
+        """
+        Extrai todas as fotos do veículo ClickGarage JSON
+        Campos: imagem_principal, galeria (lista)
+        """
+        fotos = []
+        
+        # Imagem principal
+        if img_principal := veiculo.get("imagem_principal"):
+            if isinstance(img_principal, str) and img_principal.strip():
+                fotos.append(img_principal.strip())
+        
+        # Galeria (lista de URLs)
+        galeria = veiculo.get("galeria", [])
+        if isinstance(galeria, list):
+            for foto_url in galeria:
+                if isinstance(foto_url, str) and foto_url.strip():
+                    url = foto_url.strip()
+                    if url not in fotos:  # Evita duplicatas
+                        fotos.append(url)
+        
+        return fotos
