@@ -25,6 +25,7 @@ from .autogestor_parser import AutogestorParser
 from .netcar_parser import NetcarParser
 from .revendai_telefones_parser import RevendaiTelefonesParser
 from .itcar_parser import ItcarParser
+from .diamond_parser import DiamondParser
 
 __all__ = [
     'RevendaiParser',
@@ -50,5 +51,6 @@ __all__ = [
     'AdmycarParser',
     'AutogestorParser',
     'LojaConectadaParser',
-    'ItcarParser'
+    'ItcarParser',
+    'DiamondParser'
 ]
