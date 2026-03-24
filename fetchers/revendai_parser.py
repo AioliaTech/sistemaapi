@@ -78,6 +78,7 @@ class RevendaiParser(BaseParser):
                 "categoria": v.get("categoria") or categoria_final,
                 "cilindrada": cilindrada_final,
                 "preco": v.get("preco"),
+                "valor_troca": v.get("valor_troca"),
                 "opcionais": opcionais_veiculo,
                 "fotos": v.get("fotos", [])
             })
