@@ -37,6 +37,8 @@ BASE_URL = os.getenv("BASE_URL", "https://api.revendai.com")
 # Static files & templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+# Fix para Jinja2 3.1.5+ que tem bug com cache key quando globals é dict
+templates.env.cache = None
 
 # Global singletons
 client_manager = ClientManager()
