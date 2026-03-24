@@ -37,8 +37,6 @@ BASE_URL = os.getenv("BASE_URL", "https://api.revendai.com")
 # Static files & templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-# Fix para Jinja2 3.1.5+ que tem bug com cache key quando globals é dict
-templates.env.cache = None
 
 # Global singletons
 client_manager = ClientManager()
@@ -77,7 +75,7 @@ class UpdateClientRequest(BaseModel):
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    return templates.TemplateResponse(request=request, name="login.html", context={"error": None})
 
 @app.post("/login")
 def login_submit(
@@ -87,8 +85,9 @@ def login_submit(
 ):
     if not authenticate_user(email, password):
         return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "E-mail ou senha incorretos"},
+            request=request,
+            name="login.html",
+            context={"error": "E-mail ou senha incorretos"},
             status_code=401,
         )
     token = create_access_token({"sub": email})
@@ -139,9 +138,9 @@ def dashboard(request: Request, _auth=Depends(require_auth)):
     clients_data.sort(key=lambda x: (status_priority.get(x["status"], 3), x["name"].lower()))
     
     return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
+        request=request,
+        name="dashboard.html",
+        context={
             "clients": clients_data,
             "base_url": BASE_URL,
         },
