@@ -703,10 +703,36 @@ def _transform_revendai(vehicle: dict) -> dict:
         "valor_troca": vehicle.get("valor_troca"),
     }
 
+def _transform_covel(vehicle: dict) -> dict:
+    """Transformação específica para CovelParser — retorna apenas os campos do Covel."""
+    fotos = vehicle.get("fotos") or []
+    foto = fotos[0] if fotos else None
+    return {
+        "id": vehicle.get("id"),
+        "marca": vehicle.get("marca"),
+        "modelo": vehicle.get("modelo"),
+        "descricao": vehicle.get("observacao"),
+        "preco": vehicle.get("preco"),
+        "foto": foto,
+    }
+
 PARSER_TRANSFORMERS: Dict[str, Any] = {
     "RevendaiParser": _transform_revendai,
-    # Adicione novos transformadores aqui conforme necessidade:
-    # "CovelParser": _transform_covel,
+    "CovelParser": _transform_covel,
+}
+
+# Instruções customizadas para o endpoint /list por parser
+PARSER_LIST_INSTRUCTIONS: Dict[str, str] = {
+    "CovelParser": (
+        "### COMO LER O JSON de 'BuscaEstoque' — Covel (motos elétricas)\n"
+        "Cada item contém os seguintes campos:\n"
+        "- id: identificador único do produto\n"
+        "- marca: fabricante da moto elétrica\n"
+        "- modelo: nome completo do modelo\n"
+        "- descricao: descrição detalhada do produto\n"
+        "- preco: preço de venda em reais\n"
+        "- foto: URL da imagem principal do produto\n"
+    ),
 }
 
 def _apply_parser_transform(vehicles: List[Dict], parser_name: str) -> List[Dict]:
@@ -759,6 +785,10 @@ def client_status(slug: str):
 def client_list_vehicles(slug: str, request: Request):
     vehicles = _get_client_vehicles(slug)
 
+    # Obtém o parser_used para customizar a instrução
+    _client = client_manager.get_client_by_slug(slug)
+    parser_name = getattr(_client, "parser_used", None) or ""
+
     query_params = dict(request.query_params)
     filter_categoria = query_params.get("categoria")
     filter_tipo = query_params.get("tipo")
@@ -774,14 +804,18 @@ def client_list_vehicles(slug: str, request: Request):
         for v in filtered_vehicles
     )
 
-    instruction_text = (
-        "### COMO LER O JSON de 'BuscaEstoque' (CRUCIAL — leia cada linha com atenção)\n"
-        "- Para motocicletas (se o segundo valor no JSON for 'moto'):\n"
-        "Código ID, tipo (moto), marca, modelo, versão, cor, ano, quilometragem, combustível, cilindrada, preço\n"
-        "- Para carros (se o segundo valor no JSON for 'carro'):\n"
-        "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais]\n\n"
-        "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
-        "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
+    # Usa instrução customizada do parser se existir, senão usa o padrão
+    instruction_text = PARSER_LIST_INSTRUCTIONS.get(
+        parser_name,
+        (
+            "### COMO LER O JSON de 'BuscaEstoque' (CRUCIAL — leia cada linha com atenção)\n"
+            "- Para motocicletas (se o segundo valor no JSON for 'moto'):\n"
+            "Código ID, tipo (moto), marca, modelo, versão, cor, ano, quilometragem, combustível, cilindrada, preço\n"
+            "- Para carros (se o segundo valor no JSON for 'carro'):\n"
+            "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais]\n\n"
+            "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
+            "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
+        )
     )
 
     result = {"instruction": instruction_text}
