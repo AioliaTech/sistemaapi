@@ -34,7 +34,8 @@ from fetchers import (
     WordPressParser,
     ItcarParser,
     DiamondParser,
-    CovelParser
+    CovelParser,
+    EcosysParser
 )
 
 
@@ -65,7 +66,8 @@ class UnifiedVehicleFetcher:
             LojaConectadaParser(),
             ItcarParser(),
             DiamondParser(),
-            CovelParser()
+            CovelParser(),
+            EcosysParser()
         ]
         self.last_parser_used: Optional[str] = None
 

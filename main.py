@@ -716,9 +716,20 @@ def _transform_covel(vehicle: dict) -> dict:
         "foto": foto,
     }
 
+def _transform_ecosys(vehicle: dict) -> dict:
+    """Transformação específica para EcosysParser — retorna apenas os campos do Ecosys."""
+    return {
+        "id": vehicle.get("id"),
+        "modelo": vehicle.get("modelo"),
+        "descricao": vehicle.get("observacao"),
+        "preco": vehicle.get("preco"),
+        "fotos": vehicle.get("fotos", []),
+    }
+
 PARSER_TRANSFORMERS: Dict[str, Any] = {
     "RevendaiParser": _transform_revendai,
     "CovelParser": _transform_covel,
+    "EcosysParser": _transform_ecosys,
 }
 
 # Formatadores customizados para o endpoint /list por parser
@@ -734,8 +745,19 @@ def _format_vehicle_covel(vehicle: dict) -> str:
         sv(vehicle.get("preco")),
     ])
 
+def _format_vehicle_ecosys(vehicle: dict) -> str:
+    """Formata veículo Ecosys para o /list: id, modelo, preco"""
+    def sv(v):
+        return "" if v is None else str(v)
+    return ",".join([
+        sv(vehicle.get("id")),
+        sv(vehicle.get("modelo")),
+        sv(vehicle.get("preco")),
+    ])
+
 PARSER_LIST_FORMATTERS: Dict[str, Any] = {
     "CovelParser": _format_vehicle_covel,
+    "EcosysParser": _format_vehicle_ecosys,
 }
 
 # Instruções customizadas para o endpoint /list por parser
@@ -747,6 +769,14 @@ PARSER_LIST_INSTRUCTIONS: Dict[str, str] = {
         "- id: identificador único do produto\n"
         "- marca: fabricante da moto elétrica\n"
         "- modelo: nome completo do modelo\n"
+        "- preco: preço de venda em reais\n"
+    ),
+    "EcosysParser": (
+        "### COMO LER O JSON de 'BuscaEstoque' — EcosysAuto\n"
+        "Cada item contém os seguintes campos:\n"
+        "id, modelo, preco\n"
+        "- id: identificador único do veículo\n"
+        "- modelo: nome do modelo do veículo\n"
         "- preco: preço de venda em reais\n"
     ),
 }

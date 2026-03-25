@@ -27,6 +27,7 @@ from .revendai_telefones_parser import RevendaiTelefonesParser
 from .itcar_parser import ItcarParser
 from .diamond_parser import DiamondParser
 from .covel_parser import CovelParser
+from .ecosys_parser import EcosysParser
 
 __all__ = [
     'RevendaiParser',
@@ -54,5 +55,6 @@ __all__ = [
     'LojaConectadaParser',
     'ItcarParser',
     'DiamondParser',
-    'CovelParser'
+    'CovelParser',
+    'EcosysParser'
 ]
