@@ -692,8 +692,33 @@ def _collect_multi_params(qp: Any) -> Dict[str, str]:
             out[key] = ",".join(acc)
     return out
 
+# ─── Parser Transformers ──────────────────────────────────────────────────────
+# Adicione aqui transformações específicas por parser.
+# Se não existir transformador para o parser, a saída padrão é usada.
+
+def _transform_revendai(vehicle: dict) -> dict:
+    """Transformação específica para RevendaiParser — inclui campos extras do Revendai."""
+    return {
+        **vehicle,
+        "valor_troca": vehicle.get("valor_troca"),
+    }
+
+PARSER_TRANSFORMERS: Dict[str, Any] = {
+    "RevendaiParser": _transform_revendai,
+    # Adicione novos transformadores aqui conforme necessidade:
+    # "CovelParser": _transform_covel,
+}
+
+def _apply_parser_transform(vehicles: List[Dict], parser_name: str) -> List[Dict]:
+    """Aplica transformação específica do parser se existir, senão retorna como está."""
+    transformer = PARSER_TRANSFORMERS.get(parser_name or "")
+    if not transformer:
+        return vehicles
+    return [transformer(v) for v in vehicles]
+
+
 def _get_client_vehicles(slug: str):
-    """Load vehicles for a client slug, or raise 404."""
+    """Load vehicles for a client slug, apply parser transform, or raise 404."""
     client = client_manager.get_client_by_slug(slug)
     if not client:
         raise HTTPException(status_code=404, detail=f"Cliente '{slug}' não encontrado")
@@ -703,7 +728,9 @@ def _get_client_vehicles(slug: str):
     vehicles = data.get("veiculos", [])
     if not isinstance(vehicles, list):
         raise HTTPException(status_code=500, detail="Formato de dados inválido")
-    return vehicles
+    # Aplica transformação específica do parser (ou retorna padrão se não existir)
+    parser_name = getattr(client, "parser_used", None) or ""
+    return _apply_parser_transform(vehicles, parser_name)
 
 # ─── Public API routes ────────────────────────────────────────────────────────
 

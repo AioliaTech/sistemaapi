@@ -26,6 +26,7 @@ from .netcar_parser import NetcarParser
 from .revendai_telefones_parser import RevendaiTelefonesParser
 from .itcar_parser import ItcarParser
 from .diamond_parser import DiamondParser
+from .covel_parser import CovelParser
 
 __all__ = [
     'RevendaiParser',
@@ -52,5 +53,6 @@ __all__ = [
     'AutogestorParser',
     'LojaConectadaParser',
     'ItcarParser',
-    'DiamondParser'
+    'DiamondParser',
+    'CovelParser'
 ]
