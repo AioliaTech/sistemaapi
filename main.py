@@ -841,6 +841,16 @@ PARSER_LIST_INSTRUCTIONS: Dict[str, str] = {
         "- modelo: nome do modelo do veículo\n"
         "- preco: preço de venda em reais\n"
     ),
+    "RevendamaisParser": (
+        "### COMO LER O JSON de 'BuscaEstoque' (CRUCIAL — leia cada linha com atenção)\n"
+        "- Para motocicletas (se o segundo valor no JSON for 'moto'):\n"
+        "Código ID, tipo (moto), marca, modelo, versão, cor, ano, quilometragem, combustível, cilindrada, preço, blindado\n"
+        "- Para carros (se o segundo valor no JSON for 'carro'):\n"
+        "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais], blindado\n\n"
+        "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
+        "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
+        "- blindado: 'true' se o veículo é blindado, 'false' se não é, vazio se não informado\n"
+    ),
 }
 
 def _apply_parser_transform(vehicles: List[Dict], parser_name: str) -> List[Dict]:
