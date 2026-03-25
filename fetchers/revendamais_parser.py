@@ -83,6 +83,13 @@ class RevendamaisParser(BaseParser):
                 cilindrada_final = None
                 tipo_final = v.get("CATEGORY")
 
+            # Campo blindado: vem como "true"/"false" ou ausente
+            armored_raw = v.get("ARMORED") or v.get("armored")
+            if armored_raw is not None:
+                blindado = str(armored_raw).strip().lower() == "true"
+            else:
+                blindado = None
+
             parsed = self.normalize_vehicle({
                 "id": v.get("ID"),
                 "tipo": tipo_final,
@@ -100,7 +107,8 @@ class RevendamaisParser(BaseParser):
                 "categoria": categoria_final,
                 "cilindrada": cilindrada_final,
                 "preco": self.converter_preco(v.get("PRICE")),
-                "opcionais": opcionais_veiculo, 
+                "blindado": blindado,
+                "opcionais": opcionais_veiculo,
                 "fotos": self._extract_photos(v)
             })
             parsed_vehicles.append(parsed)

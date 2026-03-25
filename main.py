@@ -703,6 +703,13 @@ def _transform_revendai(vehicle: dict) -> dict:
         "valor_troca": vehicle.get("valor_troca"),
     }
 
+def _transform_revendamais(vehicle: dict) -> dict:
+    """Transformação específica para RevendamaisParser — inclui campo blindado."""
+    return {
+        **vehicle,
+        "blindado": vehicle.get("blindado"),
+    }
+
 def _transform_covel(vehicle: dict) -> dict:
     """Transformação específica para CovelParser — retorna apenas os campos do Covel."""
     fotos = vehicle.get("fotos") or []
@@ -728,6 +735,7 @@ def _transform_ecosys(vehicle: dict) -> dict:
 
 PARSER_TRANSFORMERS: Dict[str, Any] = {
     "RevendaiParser": _transform_revendai,
+    "RevendamaisParser": _transform_revendamais,
     "CovelParser": _transform_covel,
     "EcosysParser": _transform_ecosys,
 }
@@ -755,9 +763,63 @@ def _format_vehicle_ecosys(vehicle: dict) -> str:
         sv(vehicle.get("preco")),
     ])
 
+def _format_vehicle_revendamais(vehicle: dict) -> str:
+    """Formata veículo RevendaMais para o /list — igual ao padrão de carros + blindado no final"""
+    tipo = (vehicle.get("tipo") or "").lower()
+
+    def sv(v):
+        return "" if v is None else str(v)
+
+    opcionais_str = vehicle.get("opcionais", "")
+    codigos_opcionais = opcionais_para_codigos(opcionais_str)
+    codigos_formatados = f"[{','.join(map(str, codigos_opcionais))}]" if codigos_opcionais else "[]"
+
+    blindado_val = vehicle.get("blindado")
+    if blindado_val is True:
+        blindado_str = "true"
+    elif blindado_val is False:
+        blindado_str = "false"
+    else:
+        blindado_str = ""
+
+    if "moto" in tipo:
+        return ",".join([
+            sv(vehicle.get("id")),
+            sv(vehicle.get("tipo")),
+            sv(vehicle.get("marca")),
+            sv(vehicle.get("modelo")),
+            sv(vehicle.get("versao")),
+            sv(vehicle.get("cor")),
+            sv(vehicle.get("ano")),
+            sv(vehicle.get("km")),
+            sv(vehicle.get("combustivel")),
+            sv(vehicle.get("cilindrada")),
+            sv(vehicle.get("preco")),
+            blindado_str,
+        ])
+    else:
+        return ",".join([
+            sv(vehicle.get("id")),
+            sv(vehicle.get("tipo")),
+            sv(vehicle.get("marca")),
+            sv(vehicle.get("modelo")),
+            sv(vehicle.get("versao")),
+            sv(vehicle.get("cor")),
+            sv(vehicle.get("ano")),
+            sv(vehicle.get("km")),
+            sv(vehicle.get("combustivel")),
+            sv(vehicle.get("cambio")),
+            sv(vehicle.get("motor")),
+            sv(vehicle.get("portas")),
+            sv(vehicle.get("preco")),
+            codigos_formatados,
+            blindado_str,
+        ])
+
 PARSER_LIST_FORMATTERS: Dict[str, Any] = {
     "CovelParser": _format_vehicle_covel,
     "EcosysParser": _format_vehicle_ecosys,
+    "RevendamaisParser": _format_vehicle_revendamais,
 }
 
 # Instruções customizadas para o endpoint /list por parser

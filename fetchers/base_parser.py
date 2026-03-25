@@ -71,6 +71,7 @@ class BaseParser(ABC):
             "cilindrada": vehicle.get("cilindrada"),
             "preco": vehicle.get("preco", 0.0),
             "valor_troca": vehicle.get("valor_troca"),
+            "blindado": vehicle.get("blindado"),
             "opcionais": vehicle.get("opcionais", ""),
             "localizacao": vehicle.get("localizacao"),
             "fotos": vehicle.get("fotos", [])
