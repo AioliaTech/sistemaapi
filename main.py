@@ -721,17 +721,33 @@ PARSER_TRANSFORMERS: Dict[str, Any] = {
     "CovelParser": _transform_covel,
 }
 
+# Formatadores customizados para o endpoint /list por parser
+# Recebe um vehicle (já transformado) e retorna string formatada
+def _format_vehicle_covel(vehicle: dict) -> str:
+    """Formata veículo Covel para o /list: id, marca, modelo, preco"""
+    def sv(v):
+        return "" if v is None else str(v)
+    return ",".join([
+        sv(vehicle.get("id")),
+        sv(vehicle.get("marca")),
+        sv(vehicle.get("modelo")),
+        sv(vehicle.get("preco")),
+    ])
+
+PARSER_LIST_FORMATTERS: Dict[str, Any] = {
+    "CovelParser": _format_vehicle_covel,
+}
+
 # Instruções customizadas para o endpoint /list por parser
 PARSER_LIST_INSTRUCTIONS: Dict[str, str] = {
     "CovelParser": (
         "### COMO LER O JSON de 'BuscaEstoque' — Covel (motos elétricas)\n"
         "Cada item contém os seguintes campos:\n"
+        "id, marca, modelo, preco\n"
         "- id: identificador único do produto\n"
         "- marca: fabricante da moto elétrica\n"
         "- modelo: nome completo do modelo\n"
-        "- descricao: descrição detalhada do produto\n"
         "- preco: preço de venda em reais\n"
-        "- foto: URL da imagem principal do produto\n"
     ),
 }
 
@@ -818,6 +834,9 @@ def client_list_vehicles(slug: str, request: Request):
         )
     )
 
+    # Usa formatador customizado do parser se existir, senão usa o padrão
+    _list_formatter = PARSER_LIST_FORMATTERS.get(parser_name, _format_vehicle)
+
     result = {"instruction": instruction_text}
 
     if has_localizacao:
@@ -829,7 +848,7 @@ def client_list_vehicles(slug: str, request: Request):
             if localizacao not in localizacoes_dict:
                 localizacoes_dict[localizacao] = {"categorias": {}, "nao_mapeados": []}
             categoria = vehicle.get("categoria")
-            formatted_vehicle = _format_vehicle(vehicle)
+            formatted_vehicle = _list_formatter(vehicle)
             if not categoria or categoria in ["", "None", None]:
                 localizacoes_dict[localizacao]["nao_mapeados"].append(formatted_vehicle)
             else:
@@ -849,11 +868,11 @@ def client_list_vehicles(slug: str, request: Request):
         for vehicle in filtered_vehicles:
             categoria = vehicle.get("categoria")
             if not categoria or categoria in ["", "None", None]:
-                nao_mapeados.append(_format_vehicle(vehicle))
+                nao_mapeados.append(_list_formatter(vehicle))
                 continue
             if categoria not in categorized_vehicles:
                 categorized_vehicles[categoria] = []
-            categorized_vehicles[categoria].append(_format_vehicle(vehicle))
+            categorized_vehicles[categoria].append(_list_formatter(vehicle))
         for categoria in sorted(categorized_vehicles.keys()):
             result[categoria] = categorized_vehicles[categoria]
         if nao_mapeados:
