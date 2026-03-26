@@ -954,9 +954,11 @@ def client_list_vehicles(slug: str, request: Request):
             if not categoria or categoria in ["", "None", None]:
                 localizacoes_dict[localizacao]["nao_mapeados"].append(formatted_vehicle)
             else:
-                if categoria not in localizacoes_dict[localizacao]["categorias"]:
-                    localizacoes_dict[localizacao]["categorias"][categoria] = []
-                localizacoes_dict[localizacao]["categorias"][categoria].append(formatted_vehicle)
+                # Normaliza categoria para Title Case para evitar duplicatas
+                categoria_key = categoria.strip().title()
+                if categoria_key not in localizacoes_dict[localizacao]["categorias"]:
+                    localizacoes_dict[localizacao]["categorias"][categoria_key] = []
+                localizacoes_dict[localizacao]["categorias"][categoria_key].append(formatted_vehicle)
         for localizacao in sorted(localizacoes_dict.keys()):
             loc_data = localizacoes_dict[localizacao]
             result[localizacao] = {}
@@ -972,9 +974,11 @@ def client_list_vehicles(slug: str, request: Request):
             if not categoria or categoria in ["", "None", None]:
                 nao_mapeados.append(_list_formatter(vehicle))
                 continue
-            if categoria not in categorized_vehicles:
-                categorized_vehicles[categoria] = []
-            categorized_vehicles[categoria].append(_list_formatter(vehicle))
+            # Normaliza categoria para Title Case para evitar duplicatas (ex: "hatch" e "Hatch")
+            categoria_key = categoria.strip().title()
+            if categoria_key not in categorized_vehicles:
+                categorized_vehicles[categoria_key] = []
+            categorized_vehicles[categoria_key].append(_list_formatter(vehicle))
         for categoria in sorted(categorized_vehicles.keys()):
             result[categoria] = categorized_vehicles[categoria]
         if nao_mapeados:
