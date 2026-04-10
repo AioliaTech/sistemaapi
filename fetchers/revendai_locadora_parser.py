@@ -1,5 +1,5 @@
 """
-Parser específico para Revendai (revendai.com.br)
+Parser específico para Revendai Locadora (integrador.revendai.com.br/api/client/.../locadora)
 """
 
 from .base_parser import BaseParser
@@ -7,37 +7,32 @@ from typing import Dict, List, Any
 import re
 
 
-class RevendaiParser(BaseParser):
-    """Parser para dados do Revendai"""
+class RevendaiLocadoraParser(BaseParser):
+    """Parser para dados do Revendai Locadora"""
 
     def can_parse(self, data: Any, url: str) -> bool:
-        """Verifica se pode processar dados do Revendai"""
-        # Proteção contra url None ou vazia
+        """Verifica se pode processar dados do Revendai Locadora"""
         if not url:
             return False
 
         url = url.lower()
-        return "integrador.revendai" in url and "locadora" not in url
+        return "integrador.revendai" in url and "locadora" in url
 
     def parse(self, data: Any, url: str) -> List[Dict]:
-        """Processa dados do Revendai"""
-        # Validação de dados
+        """Processa dados do Revendai Locadora"""
         if not data or not isinstance(data, dict):
             return []
 
         veiculos = data.get("veiculos", [])
 
-        # Validação de veículos
         if not veiculos or not isinstance(veiculos, list):
             return []
 
         parsed_vehicles = []
         for v in veiculos:
-            # Validação de cada veículo
             if not isinstance(v, dict):
                 continue
 
-            # Ignora veículos inativos
             if v.get("ativo") == False:
                 continue
 
@@ -63,10 +58,13 @@ class RevendaiParser(BaseParser):
                 tipo_final = tipo_veiculo
 
             id_original = v.get("id", "")
-            numeros = re.findall(
-                r"\d", str(id_original)
-            )  # Converte para string por segurança
+            numeros = re.findall(r"\d", str(id_original))
             id_final = "".join(numeros[:5]) if len(numeros) >= 5 else "".join(numeros)
+
+            # Para locadora, extrai valores dos planos e ignora diaria/semanal/quinzenal/mensal
+            plano_start = v.get("plano_start")
+            plano_drive = v.get("plano_drive")
+            plano_km_livre = v.get("plano_km_livre")
 
             parsed = self.normalize_vehicle(
                 {
@@ -90,6 +88,9 @@ class RevendaiParser(BaseParser):
                     "valor_troca": v.get("valor_troca"),
                     "opcionais": opcionais_veiculo,
                     "fotos": v.get("fotos", []),
+                    "plano_start": plano_start,
+                    "plano_drive": plano_drive,
+                    "plano_km_livre": plano_km_livre,
                 }
             )
             parsed_vehicles.append(parsed)

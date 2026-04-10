@@ -35,7 +35,8 @@ from fetchers import (
     ItcarParser,
     DiamondParser,
     CovelParser,
-    EcosysParser
+    EcosysParser,
+    RevendaiLocadoraParser,
 )
 
 
@@ -57,6 +58,7 @@ class UnifiedVehicleFetcher:
             DSAutoEstoqueParser(),
             BndvParser(),
             RevendaiParser(),
+            RevendaiLocadoraParser(),
             ComautoParser1(),
             ComautoParser2(),
             RevendaPlusParser(),
@@ -67,54 +69,56 @@ class UnifiedVehicleFetcher:
             ItcarParser(),
             DiamondParser(),
             CovelParser(),
-            EcosysParser()
+            EcosysParser(),
         ]
         self.last_parser_used: Optional[str] = None
 
     def detect_format(self, content: bytes, url: str) -> tuple[Any, str]:
         """Detecta se o conteúdo é JSON ou XML"""
         import re
-        
+
         # Remove BOM se presente (UTF-8, UTF-16, UTF-32)
-        if content.startswith(b'\xef\xbb\xbf'):
+        if content.startswith(b"\xef\xbb\xbf"):
             content = content[3:]
-        elif content.startswith(b'\xff\xfe') or content.startswith(b'\xfe\xff'):
+        elif content.startswith(b"\xff\xfe") or content.startswith(b"\xfe\xff"):
             content = content[2:]
-        elif content.startswith(b'\x00\x00\xfe\xff') or content.startswith(b'\xff\xfe\x00\x00'):
+        elif content.startswith(b"\x00\x00\xfe\xff") or content.startswith(
+            b"\xff\xfe\x00\x00"
+        ):
             content = content[4:]
-        
+
         # Tenta diferentes encodings
         content_str = None
-        for encoding in ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252']:
+        for encoding in ["utf-8", "utf-8-sig", "latin-1", "cp1252"]:
             try:
                 content_str = content.decode(encoding).strip()
                 break
             except (UnicodeDecodeError, AttributeError):
                 continue
-        
+
         if not content_str:
-            content_str = content.decode('utf-8', errors='ignore').strip()
-        
+            content_str = content.decode("utf-8", errors="ignore").strip()
+
         # Tenta parsear como JSON
         try:
             return json.loads(content_str), "json"
         except json.JSONDecodeError as e:
             print(f"[DEBUG] Erro ao parsear JSON: {e}")
             print(f"[DEBUG] Primeiros 500 caracteres: {content_str[:500]}")
-            
+
             # Tenta corrigir problemas comuns no JSON
             try:
                 # Remove trailing commas antes de ] ou }
-                fixed_content = re.sub(r',\s*([}\]])', r'\1', content_str)
-                
+                fixed_content = re.sub(r",\s*([}\]])", r"\1", content_str)
+
                 # Remove caracteres de controle inválidos (tabs, newlines dentro de strings)
                 # Mantém apenas espaços, mas remove \t, \n, \r dentro de valores de string
-                fixed_content = re.sub(r'[\x00-\x1f\x7f]', ' ', fixed_content)
-                
+                fixed_content = re.sub(r"[\x00-\x1f\x7f]", " ", fixed_content)
+
                 return json.loads(fixed_content), "json"
             except json.JSONDecodeError as e2:
                 print(f"[DEBUG] Erro após correções: {e2}")
-                
+
                 # Tenta parsear como XML
                 try:
                     return xmltodict.parse(content_str), "xml"
@@ -168,11 +172,7 @@ class UnifiedVehicleFetcher:
 
     def _generate_stats(self, vehicles: List[Dict]) -> Dict:
         """Gera estatísticas dos veículos processados"""
-        stats = {
-            "por_tipo": {},
-            "top_marcas": {},
-            "parsers_utilizados": {}
-        }
+        stats = {"por_tipo": {}, "top_marcas": {}, "parsers_utilizados": {}}
 
         for vehicle in vehicles:
             tipo = vehicle.get("tipo", "indefinido")
@@ -191,7 +191,7 @@ _PRIVATE_NETWORKS = [
     ipaddress.ip_network("172.16.0.0/12"),
     ipaddress.ip_network("192.168.0.0/16"),
     ipaddress.ip_network("127.0.0.0/8"),
-    ipaddress.ip_network("169.254.0.0/16"),   # link-local / AWS metadata
+    ipaddress.ip_network("169.254.0.0/16"),  # link-local / AWS metadata
     ipaddress.ip_network("::1/128"),
     ipaddress.ip_network("fc00::/7"),
 ]
@@ -204,7 +204,9 @@ def validate_source_url(url: str) -> None:
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
-        raise ValueError(f"URL scheme '{parsed.scheme}' is not allowed. Use http or https.")
+        raise ValueError(
+            f"URL scheme '{parsed.scheme}' is not allowed. Use http or https."
+        )
     if not parsed.netloc:
         raise ValueError("URL must include a host.")
 
@@ -213,7 +215,9 @@ def validate_source_url(url: str) -> None:
         addr = ipaddress.ip_address(host)
         for net in _PRIVATE_NETWORKS:
             if addr in net:
-                raise ValueError(f"URL resolves to a private/reserved address ({addr}), which is not allowed.")
+                raise ValueError(
+                    f"URL resolves to a private/reserved address ({addr}), which is not allowed."
+                )
     except ValueError as exc:
         # Re-raise only if it came from our network check; hostname strings are fine
         if "private/reserved" in str(exc) or "not allowed" in str(exc):
@@ -240,7 +244,7 @@ def fetch_for_client(source_url: str, output_path: Path) -> dict:
         "_total_count": len(vehicles),
         "_sources_processed": 1,
         "_parser_used": parser_name,
-        "_statistics": stats
+        "_statistics": stats,
     }
 
     output_path.mkdir(parents=True, exist_ok=True)

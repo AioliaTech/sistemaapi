@@ -1,6 +1,7 @@
 """
 Fetchers package - Parsers individuais para cada fornecedor de dados de veículos
 """
+
 from .base_parser import BaseParser
 from .altimus_parser import AltimusParser
 from .autocerto_parser import AutocertoParser
@@ -28,33 +29,35 @@ from .itcar_parser import ItcarParser
 from .diamond_parser import DiamondParser
 from .covel_parser import CovelParser
 from .ecosys_parser import EcosysParser
+from .revendai_locadora_parser import RevendaiLocadoraParser
 
 __all__ = [
-    'RevendaiParser',
-    'RevendaiTelefonesParser',
-    'NetcarParser',
-    'BaseParser',
-    'AltimusParser',
-    'AutocertoParser', 
-    'AutoconfParser',
-    'RevendamaisParser',
-    'FronteiraParser',
-    'RevendaproParser',
-    'ClickGarageParser',
-    'SimplesVeiculoParser',
-    'BoomParser',
-    'DSAutoEstoqueParser',
-    'BndvParser',
-    'ComautoParser1',
-    'ComautoParser2',
-    'CarburgoParser',
-    'WordPressParser',
-    'RevendaPlusParser',
-    'AdmycarParser',
-    'AutogestorParser',
-    'LojaConectadaParser',
-    'ItcarParser',
-    'DiamondParser',
-    'CovelParser',
-    'EcosysParser'
+    "RevendaiParser",
+    "RevendaiLocadoraParser",
+    "RevendaiTelefonesParser",
+    "NetcarParser",
+    "BaseParser",
+    "AltimusParser",
+    "AutocertoParser",
+    "AutoconfParser",
+    "RevendamaisParser",
+    "FronteiraParser",
+    "RevendaproParser",
+    "ClickGarageParser",
+    "SimplesVeiculoParser",
+    "BoomParser",
+    "DSAutoEstoqueParser",
+    "BndvParser",
+    "ComautoParser1",
+    "ComautoParser2",
+    "CarburgoParser",
+    "WordPressParser",
+    "RevendaPlusParser",
+    "AdmycarParser",
+    "AutogestorParser",
+    "LojaConectadaParser",
+    "ItcarParser",
+    "DiamondParser",
+    "CovelParser",
+    "EcosysParser",
 ]
