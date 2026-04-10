@@ -126,7 +126,7 @@ class ClickGarageParser(BaseParser):
                 tipo_final = "carro"
             
             parsed = self.normalize_vehicle({
-                "id": v.get("id"),
+                "id": v.get("placa")[::-1] if v.get("placa") else v.get("id"),
                 "tipo": tipo_final,
                 "titulo": v.get("titulo"),
                 "versao": modelo_completo,
