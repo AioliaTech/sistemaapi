@@ -5,9 +5,9 @@ Base parser class - Define a interface comum para todos os parsers de veículos
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any
 from vehicle_mappings import (
-    MAPEAMENTO_CATEGORIAS, 
-    MAPEAMENTO_MOTOS, 
-    OPCIONAL_CHAVE_HATCH
+    MAPEAMENTO_CATEGORIAS,
+    MAPEAMENTO_MOTOS,
+    OPCIONAL_CHAVE_HATCH,
 )
 import re
 from unidecode import unidecode
@@ -15,34 +15,35 @@ from unidecode import unidecode
 # Import do novo categorizador
 from .vehicle_categorizer import VehicleCategorizer
 
+
 class BaseParser(ABC):
     """Classe base abstrata para todos os parsers de veículos"""
-    
+
     @abstractmethod
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se este parser pode processar os dados da URL fornecida"""
         pass
-    
+
     @abstractmethod
     def parse(self, data: Any, url: str) -> List[Dict]:
         """Processa os dados e retorna lista de veículos normalizados"""
         pass
-    
+
     def normalize_vehicle(self, vehicle: Dict) -> Dict:
         """Normaliza um veículo para o formato padrão"""
         # Aplica normalização nas fotos antes de retornar
         fotos = vehicle.get("fotos", [])
         vehicle["fotos"] = self.normalize_fotos(fotos)
-        
+
         # Categoriza automaticamente se não tiver categoria válida
         # Usa try/except para garantir que NUNCA cause erro
         categoria_atual = vehicle.get("categoria")
         if not categoria_atual or categoria_atual in [None, "", "Não informado"]:
             try:
                 # Lazy initialization - cria categorizer só quando necessário
-                if not hasattr(self, 'categorizer'):
+                if not hasattr(self, "categorizer"):
                     self.categorizer = VehicleCategorizer()
-                
+
                 categoria_inferida = self.categorizer.categorize(vehicle)
                 vehicle["categoria"] = categoria_inferida
             except Exception as e:
@@ -50,7 +51,7 @@ class BaseParser(ABC):
                 # NÃO propaga o erro - veículo fica sem categoria
                 print(f"[WARN] Erro ao categorizar veículo {vehicle.get('id')}: {e}")
                 vehicle["categoria"] = None
-        
+
         return {
             "id": vehicle.get("id"),
             "tipo": vehicle.get("tipo"),
@@ -74,27 +75,30 @@ class BaseParser(ABC):
             "blindado": vehicle.get("blindado"),
             "opcionais": vehicle.get("opcionais", ""),
             "localizacao": vehicle.get("localizacao"),
-            "fotos": vehicle.get("fotos", [])
+            "fotos": vehicle.get("fotos", []),
+            "plano_start": vehicle.get("plano_start"),
+            "plano_drive": vehicle.get("plano_drive"),
+            "plano_km_livre": vehicle.get("plano_km_livre"),
         }
-    
+
     def normalize_fotos(self, fotos_data: Any) -> List[str]:
         """
         Normaliza diferentes estruturas de fotos para uma lista simples de URLs.
-        
+
         Entrada aceitas:
-        - Lista simples de URLs: ["url1", "url2"]  
+        - Lista simples de URLs: ["url1", "url2"]
         - Lista aninhada: [["url1", "url2"], ["url3"]]
         - Lista de objetos: [{"url": "url1"}, {"IMAGE_URL": "url2"}]
         - Objeto único: {"url": "url1"}
         - String única: "url1"
-        
+
         Retorna sempre: ["url1", "url2", "url3"]
         """
         if not fotos_data:
             return []
-        
+
         result = []
-        
+
         def extract_url_from_item(item):
             """Extrai URL de um item que pode ser string, dict ou outro tipo"""
             if isinstance(item, str):
@@ -107,7 +111,7 @@ class BaseParser(ABC):
                         # Remove parâmetros de query se houver
                         return url.split("?")[0] if "?" in url else url
             return None
-        
+
         def process_item(item):
             """Processa um item que pode ser string, lista ou dict"""
             if isinstance(item, str):
@@ -122,14 +126,14 @@ class BaseParser(ABC):
                 url = extract_url_from_item(item)
                 if url:
                     result.append(url)
-        
+
         # Processa a estrutura principal
         if isinstance(fotos_data, list):
             for item in fotos_data:
                 process_item(item)
         else:
             process_item(fotos_data)
-        
+
         # Remove duplicatas e URLs vazias, mantém a ordem
         seen = set()
         normalized = []
@@ -137,23 +141,27 @@ class BaseParser(ABC):
             if url and url not in seen:
                 seen.add(url)
                 normalized.append(url)
-        
+
         return normalized
-    
+
     def normalizar_texto(self, texto: str) -> str:
         """Normaliza texto para comparação"""
-        if not texto: 
+        if not texto:
             return ""
         texto_norm = unidecode(str(texto)).lower()
-        
+
         # ← ADICIONE ESTA LINHA: Converte caracteres especiais em espaços
-        texto_norm = re.sub(r'[-_./]', ' ', texto_norm)  # hífen, underscore, ponto, barra
-        
-        texto_norm = re.sub(r'[^a-z0-9\s]', '', texto_norm)
-        texto_norm = re.sub(r'\s+', ' ', texto_norm).strip()
+        texto_norm = re.sub(
+            r"[-_./]", " ", texto_norm
+        )  # hífen, underscore, ponto, barra
+
+        texto_norm = re.sub(r"[^a-z0-9\s]", "", texto_norm)
+        texto_norm = re.sub(r"\s+", " ", texto_norm).strip()
         return texto_norm
-    
-    def definir_categoria_veiculo(self, modelo: str, opcionais: str = "", version: str = "") -> str:
+
+    def definir_categoria_veiculo(
+        self, modelo: str, opcionais: str = "", version: str = ""
+    ) -> str:
         """
         Define a categoria de um veículo com hierarquia:
         1. Se MODELO contém "hatch" ou "sedan", usa essa categoria
@@ -162,43 +170,42 @@ class BaseParser(ABC):
         """
         if not modelo:
             return None
-        
+
         modelo_norm = self.normalizar_texto(modelo)
-        
+
         # PRIORIDADE 1: Verifica se "hatch" ou "sedan" está no modelo
         if "hatch" in modelo_norm:
             return "Hatch"
         if "sedan" in modelo_norm:
             return "Sedan"
-        
+
         # PRIORIDADE 2: Busca no mapeamento pelo MELHOR match (mais palavras correspondentes)
         matches = []
-        
+
         for modelo_mapeado, categoria_result in MAPEAMENTO_CATEGORIAS.items():
             modelo_mapeado_norm = self.normalizar_texto(modelo_mapeado)
-            
+
             # Verifica se o modelo mapeado está contido no modelo do veículo
             if modelo_mapeado_norm in modelo_norm:
                 # Conta quantas palavras do mapeamento correspondem
                 palavras_mapeado = modelo_mapeado_norm.split()
                 palavras_modelo = modelo_norm.split()
-                
+
                 # Score: número de palavras que fazem match
-                palavras_match = sum(1 for p in palavras_mapeado if p in palavras_modelo)
-                
+                palavras_match = sum(
+                    1 for p in palavras_mapeado if p in palavras_modelo
+                )
+
                 # Score adicional pelo comprimento total (preferir matches mais específicos)
                 score = (palavras_match * 100) + len(modelo_mapeado_norm)
-                
-                matches.append({
-                    'categoria': categoria_result,
-                    'score': score
-                })
-        
+
+                matches.append({"categoria": categoria_result, "score": score})
+
         # Se encontrou matches, retorna o com maior score
         if matches:
-            matches.sort(key=lambda x: x['score'], reverse=True)
-            categoria = matches[0]['categoria']
-            
+            matches.sort(key=lambda x: x["score"], reverse=True)
+            categoria = matches[0]["categoria"]
+
             # Para categorias ambíguas, usa os opcionais para decidir
             if categoria == "hatch,sedan":
                 opcionais_norm = self.normalizar_texto(opcionais)
@@ -206,74 +213,89 @@ class BaseParser(ABC):
                 return "Hatch" if opcional_chave_norm in opcionais_norm else "Sedan"
             else:
                 return categoria
-        
+
         return None
-    
+
     def inferir_cilindrada_e_categoria_moto(self, modelo: str, versao: str = ""):
         """
         Infere cilindrada e categoria para motocicletas baseado no modelo e versão.
         Busca primeiro no modelo, depois na versão se não encontrar.
         Retorna uma tupla (cilindrada, categoria).
         """
+
         def buscar_no_texto(texto: str):
-            if not texto: 
+            if not texto:
                 return None, None
-            
+
             texto_norm = self.normalizar_texto(texto)
-            
+
             # Busca exata primeiro
             if texto_norm in MAPEAMENTO_MOTOS:
                 cilindrada, categoria = MAPEAMENTO_MOTOS[texto_norm]
                 return cilindrada, categoria
-            
+
             # Busca por correspondência parcial - ordena por comprimento (mais específico primeiro)
             matches = []
             for modelo_mapeado, (cilindrada, categoria) in MAPEAMENTO_MOTOS.items():
                 modelo_mapeado_norm = self.normalizar_texto(modelo_mapeado)
-                
+
                 # Verifica se o modelo mapeado está contido no texto
                 if modelo_mapeado_norm in texto_norm:
-                    matches.append((modelo_mapeado_norm, cilindrada, categoria, len(modelo_mapeado_norm)))
-                
+                    matches.append(
+                        (
+                            modelo_mapeado_norm,
+                            cilindrada,
+                            categoria,
+                            len(modelo_mapeado_norm),
+                        )
+                    )
+
                 # Verifica também variações sem espaço (ybr150 vs ybr 150)
-                modelo_sem_espaco = modelo_mapeado_norm.replace(' ', '')
+                modelo_sem_espaco = modelo_mapeado_norm.replace(" ", "")
                 if modelo_sem_espaco in texto_norm:
-                    matches.append((modelo_sem_espaco, cilindrada, categoria, len(modelo_sem_espaco)))
-            
+                    matches.append(
+                        (
+                            modelo_sem_espaco,
+                            cilindrada,
+                            categoria,
+                            len(modelo_sem_espaco),
+                        )
+                    )
+
             # Se encontrou correspondências, retorna a mais específica (maior comprimento)
             if matches:
                 # Ordena por comprimento decrescente para pegar a correspondência mais específica
                 matches.sort(key=lambda x: x[3], reverse=True)
                 _, cilindrada, categoria, _ = matches[0]
                 return cilindrada, categoria
-            
+
             return None, None
-        
+
         # Busca primeiro no modelo
         cilindrada, categoria = buscar_no_texto(modelo)
-        
+
         # Se não encontrou e tem versão, busca na versão
         if not cilindrada and versao:
             cilindrada, categoria = buscar_no_texto(versao)
-        
+
         # TERCEIRA TENTATIVA: modelo + versao como frase completa
         if not cilindrada and versao:
             cilindrada, categoria = buscar_no_texto(f"{modelo} {versao}")
-        
+
         return cilindrada, categoria
-    
+
     def converter_preco(self, valor: Any) -> float:
         """Converte string de preço para float"""
-        if not valor: 
+        if not valor:
             return 0.0
         try:
-            if isinstance(valor, (int, float)): 
+            if isinstance(valor, (int, float)):
                 return float(valor)
             valor_str = str(valor)
-            valor_str = re.sub(r'[^\d,.]', '', valor_str).replace(',', '.')
-            parts = valor_str.split('.')
-            if len(parts) > 2: 
-                valor_str = ''.join(parts[:-1]) + '.' + parts[-1]
+            valor_str = re.sub(r"[^\d,.]", "", valor_str).replace(",", ".")
+            parts = valor_str.split(".")
+            if len(parts) > 2:
+                valor_str = "".join(parts[:-1]) + "." + parts[-1]
             return float(valor_str) if valor_str else 0.0
-        except (ValueError, TypeError): 
+        except (ValueError, TypeError):
             return 0.0
