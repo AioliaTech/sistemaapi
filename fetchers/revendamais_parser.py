@@ -102,6 +102,7 @@ class RevendamaisParser(BaseParser):
                 "cor": v.get("COLOR"),
                 "combustivel": v.get("FUEL"),
                 "cambio": v.get("GEAR"),
+                "observacao": v.get("DESCRIPTION"),
                 "motor": v.get("MOTOR"),
                 "portas": v.get("DOORS"),
                 "categoria": categoria_final,
