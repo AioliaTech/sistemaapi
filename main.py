@@ -264,6 +264,24 @@ def admin_redeploy_client(client_id: str, _auth=Depends(require_api_auth)):
     }
 
 
+@app.post("/admin/clients/redeploy-all")
+def admin_redeploy_all(_auth=Depends(require_api_auth)):
+    """Força atualização imediata de todos os clientes em background."""
+    import threading
+
+    clients = client_manager.list_clients()
+
+    def _run():
+        scheduler._fetch_all_clients()
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+    return {
+        "message": f"Redeploy global iniciado para {len(clients)} cliente(s)",
+        "total": len(clients),
+    }
+
+
 # ─── Vehicle search engine (reused from apiv4) ────────────────────────────────
 
 FALLBACK_PRIORITY = [
