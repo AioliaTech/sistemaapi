@@ -8,6 +8,44 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 from urllib.parse import urlparse
 
+# Hosts que exigem Web Unlocker (IPs de datacenter e proxies conhecidos são bloqueados)
+_WEB_UNLOCKER_HOSTS = [
+    "revendamais.com.br",
+    "app.revendamais.com.br",
+]
+
+
+def _fetch_via_web_unlocker(url: str, headers: Dict[str, str]) -> Optional[bytes]:
+    """
+    Busca a URL usando o Bright Data Web Unlocker API.
+    Retorna o conteúdo em bytes, ou None se não estiver configurado.
+    Lança exceção em caso de erro na requisição.
+    """
+    api_key = os.environ.get("BRIGHTDATA_API_KEY", "").strip()
+    zone = os.environ.get("BRIGHTDATA_ZONE", "web_unlocker1").strip()
+
+    if not api_key:
+        return None
+
+    parsed = urlparse(url)
+    host = parsed.hostname or ""
+    if not any(host == h or host.endswith("." + h) for h in _WEB_UNLOCKER_HOSTS):
+        return None
+
+    print(f"[INFO] Usando Bright Data Web Unlocker para host: {host}")
+    response = requests.post(
+        "https://api.brightdata.com/request",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        json={"zone": zone, "url": url, "format": "raw"},
+        timeout=60,
+    )
+    response.raise_for_status()
+    return response.content
+
+
 # Importa todos os parsers da pasta fetchers
 from fetchers import (
     RevendaiTelefonesParser,
@@ -182,8 +220,25 @@ class UnifiedVehicleFetcher:
                 print(
                     f"[INFO] Tentativa {i + 1}/{len(user_agents)} com User-Agent: {ua[:50]}..."
                 )
+
+                # Tenta Web Unlocker para hosts bloqueados (ex: revendamais)
+                unlocker_content = _fetch_via_web_unlocker(url, headers)
+                if unlocker_content is not None:
+                    print(f"[INFO] Conteúdo obtido via Web Unlocker.")
+
+                    class _FakeResponse:
+                        def __init__(self, content):
+                            self.content = content
+                            self.text = content.decode("utf-8", errors="ignore")
+
+                    response = _FakeResponse(unlocker_content)
+                    break
+
                 response = requests.get(
-                    url, headers=headers, timeout=30, allow_redirects=True
+                    url,
+                    headers=headers,
+                    timeout=30,
+                    allow_redirects=True,
                 )
                 response.raise_for_status()
 
