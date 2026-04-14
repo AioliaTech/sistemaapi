@@ -150,33 +150,90 @@ class UnifiedVehicleFetcher:
     def process_url(self, url: str) -> List[Dict]:
         """Processa uma URL específica"""
         print(f"[INFO] Processando URL: {url}")
-        try:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Accept-Encoding": "gzip, deflate",
-                "Connection": "keep-alive",
-                "Upgrade-Insecure-Requests": "1",
-            }
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            data, format_type = self.detect_format(response.content, url)
-            print(f"[INFO] Formato detectado: {format_type}")
 
-            parser = self.select_parser(data, url)
-            if parser:
-                return parser.parse(data, url)
-            else:
-                print(f"[ERRO] Nenhum parser adequado encontrado para URL: {url}")
-                return []
+        # Lista de User-Agents para tentar bypass de bloqueios
+        user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        ]
 
-        except requests.RequestException as e:
-            print(f"[ERRO] Erro de requisição para URL {url}: {e}")
-            raise
-        except Exception as e:
-            print(f"[ERRO] Erro crítico ao processar URL {url}: {e}")
-            raise
+        last_error = None
+        for i, ua in enumerate(user_agents):
+            try:
+                headers = {
+                    "User-Agent": ua,
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Connection": "keep-alive",
+                    "Upgrade-Insecure-Requests": "1",
+                    "Cache-Control": "max-age=0",
+                    "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120"',
+                    "Sec-Ch-Ua-Mobile": "?0",
+                    "Sec-Ch-Ua-Platform": '"Windows"',
+                    "Sec-Fetch-Dest": "document",
+                    "Sec-Fetch-Mode": "navigate",
+                    "Sec-Fetch-Site": "none",
+                    "Sec-Fetch-User": "?1",
+                }
+
+                print(
+                    f"[INFO] Tentativa {i + 1}/{len(user_agents)} com User-Agent: {ua[:50]}..."
+                )
+                response = requests.get(
+                    url, headers=headers, timeout=30, allow_redirects=True
+                )
+                response.raise_for_status()
+
+                # Verifica se não foi bloqueado
+                if (
+                    "403" in response.text[:100]
+                    or "forbidden" in response.text[:100].lower()
+                ):
+                    print(
+                        f"[AVISO] Bloqueio detectado na resposta, tentando próximo User-Agent..."
+                    )
+                    continue
+
+                print(f"[INFO] Requisição bem-sucedida com User-Agent: {ua[:50]}...")
+                break
+
+            except requests.RequestException as e:
+                last_error = e
+                print(f"[AVISO] Tentativa {i + 1} falhou: {e}")
+                if i < len(user_agents) - 1:
+                    continue
+                else:
+                    print(f"[ERRO] Erro de requisição para URL {url}: {e}")
+                    raise
+            except Exception as e:
+                last_error = e
+                print(f"[AVISO] Erro inesperado na tentativa {i + 1}: {e}")
+                if i < len(user_agents) - 1:
+                    continue
+                else:
+                    print(f"[ERRO] Erro crítico ao processar URL {url}: {e}")
+                    raise
+        else:
+            # Se todas as tentativas falharam
+            print(f"[ERRO] Todas as tentativas de User-Agent falharam para URL {url}")
+            if last_error:
+                raise last_error
+            raise requests.RequestException(
+                f"Não foi possível acessar a URL após {len(user_agents)} tentativas"
+            )
+
+        data, format_type = self.detect_format(response.content, url)
+        print(f"[INFO] Formato detectado: {format_type}")
+
+        parser = self.select_parser(data, url)
+        if parser:
+            return parser.parse(data, url)
+        else:
+            print(f"[ERRO] Nenhum parser adequado encontrado para URL: {url}")
+            return []
 
     def _generate_stats(self, vehicles: List[Dict]) -> Dict:
         """Gera estatísticas dos veículos processados"""
