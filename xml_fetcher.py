@@ -151,7 +151,15 @@ class UnifiedVehicleFetcher:
         """Processa uma URL específica"""
         print(f"[INFO] Processando URL: {url}")
         try:
-            response = requests.get(url, timeout=30)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Accept-Encoding": "gzip, deflate",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+            }
+            response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
             data, format_type = self.detect_format(response.content, url)
             print(f"[INFO] Formato detectado: {format_type}")
