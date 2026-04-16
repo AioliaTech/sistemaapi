@@ -26,8 +26,10 @@ class ClientConfig:
     slug: str
     source_url: str
     parser_used: str = "unknown"
-    status: str = "pending"   # pending | running | error
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    status: str = "pending"  # pending | running | error
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     last_updated_at: Optional[str] = None
     last_error: Optional[str] = None
     vehicle_count: int = 0
@@ -57,7 +59,7 @@ class ClientManager:
     def __init__(self):
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         CLIENTS_DIR.mkdir(parents=True, exist_ok=True)
-        self._lock = threading.Lock()   # Protects _clients list and registry file
+        self._lock = threading.Lock()  # Protects _clients list and registry file
         self._clients: List[ClientConfig] = []
         self._load_registry()
 
@@ -71,14 +73,20 @@ class ClientManager:
                     with open(CLIENTS_REGISTRY, "r", encoding="utf-8") as f:
                         raw = json.load(f)
                     self._clients = [ClientConfig.from_dict(c) for c in raw]
-                    print(f"[CLIENT_MANAGER] ✓ {len(self._clients)} cliente(s) carregado(s)")
+                    print(
+                        f"[CLIENT_MANAGER] ✓ {len(self._clients)} cliente(s) carregado(s)"
+                    )
                     for client in self._clients:
-                        print(f"[CLIENT_MANAGER]   - {client.name} ({client.slug}) - status: {client.status}")
+                        print(
+                            f"[CLIENT_MANAGER]   - {client.name} ({client.slug}) - status: {client.status}"
+                        )
                 except Exception as e:
                     print(f"[CLIENT_MANAGER] ❌ Erro ao carregar registry: {e}")
                     self._clients = []
             else:
-                print(f"[CLIENT_MANAGER] ⚠️  Registry não existe em {CLIENTS_REGISTRY}, criando novo")
+                print(
+                    f"[CLIENT_MANAGER] ⚠️  Registry não existe em {CLIENTS_REGISTRY}, criando novo"
+                )
                 self._clients = []
                 self._save_registry_locked()
 
@@ -90,7 +98,12 @@ class ClientManager:
         """Internal save — must be called with self._lock already held."""
         try:
             with open(CLIENTS_REGISTRY, "w", encoding="utf-8") as f:
-                json.dump([c.to_dict() for c in self._clients], f, ensure_ascii=False, indent=2)
+                json.dump(
+                    [c.to_dict() for c in self._clients],
+                    f,
+                    ensure_ascii=False,
+                    indent=2,
+                )
         except Exception as e:
             print(f"[ERRO] Erro ao salvar registry: {e}")
 
@@ -101,10 +114,7 @@ class ClientManager:
         if not base:
             base = "cliente"
 
-        existing_slugs = {
-            c.slug for c in self._clients
-            if c.id != exclude_id
-        }
+        existing_slugs = {c.slug for c in self._clients if c.id != exclude_id}
 
         if base not in existing_slugs:
             return base
@@ -134,7 +144,9 @@ class ClientManager:
                     return c
             return None
 
-    def create_client(self, name: str, source_url: str, custom_urls: Optional[str] = None) -> ClientConfig:
+    def create_client(
+        self, name: str, source_url: str, custom_urls: Optional[str] = None
+    ) -> ClientConfig:
         with self._lock:
             slug = self._generate_slug(name)
             client = ClientConfig(
@@ -151,7 +163,13 @@ class ClientManager:
         self.get_client_data_path(slug).mkdir(parents=True, exist_ok=True)
         return client
 
-    def update_client(self, client_id: str, name: str, source_url: str, custom_urls: Optional[str] = None) -> Optional[ClientConfig]:
+    def update_client(
+        self,
+        client_id: str,
+        name: str,
+        source_url: str,
+        custom_urls: Optional[str] = None,
+    ) -> Optional[ClientConfig]:
         with self._lock:
             client = None
             for c in self._clients:
@@ -223,6 +241,8 @@ class ClientManager:
             if status == "running":
                 client.vehicle_count = vehicle_count
                 client.last_error = None
+            elif status == "pending":
+                client.last_error = None
             elif status == "error":
                 client.last_error = error
             self._save_registry_locked()
@@ -245,11 +265,11 @@ class ClientManager:
         except Exception as e:
             print(f"[ERRO] Erro ao carregar dados do cliente {slug}: {e}")
             return None
-    
+
     def get_categorization_stats(self, slug: str) -> Dict[str, Any]:
         """
         Retorna estatísticas de categorização para um cliente.
-        
+
         Returns:
             {
                 "total": 100,
@@ -260,29 +280,31 @@ class ClientManager:
         data_file = self.get_client_data_file(slug)
         if not data_file.exists():
             return {"total": 0, "sem_categoria": 0, "percentual_sem_categoria": 0.0}
-        
+
         try:
             with open(data_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            
+
             veiculos = data.get("veiculos", [])
             total = len(veiculos)
-            
+
             if total == 0:
                 return {"total": 0, "sem_categoria": 0, "percentual_sem_categoria": 0.0}
-            
+
             # Conta veículos sem categoria ou com categoria None/vazia
             sem_categoria = sum(
-                1 for v in veiculos 
-                if not v.get("categoria") or v.get("categoria") in [None, "", "Não informado"]
+                1
+                for v in veiculos
+                if not v.get("categoria")
+                or v.get("categoria") in [None, "", "Não informado"]
             )
-            
+
             percentual = (sem_categoria / total) * 100 if total > 0 else 0.0
-            
+
             return {
                 "total": total,
                 "sem_categoria": sem_categoria,
-                "percentual_sem_categoria": round(percentual, 1)
+                "percentual_sem_categoria": round(percentual, 1),
             }
         except Exception as e:
             print(f"[ERRO] Erro ao calcular stats de categorização para {slug}: {e}")
