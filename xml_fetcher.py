@@ -33,24 +33,53 @@ def _fetch_via_web_unlocker(url: str, headers: Dict[str, str]) -> Optional[bytes
         return None
 
     print(f"[INFO] Usando Bright Data Web Unlocker para host: {host}")
-    response = requests.post(
-        "https://api.brightdata.com/request",
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        json={"zone": zone, "url": url, "format": "raw"},
-        timeout=60,
-    )
-    response.raise_for_status()
 
-    # Bright Data retorna HTTP 200 mesmo em falhas — checa o body
-    content = response.content
-    content_preview = content[:200].decode("utf-8", errors="ignore")
-    if content_preview.startswith("Request Failed"):
-        raise RuntimeError(f"[Bright Data] {content_preview.strip()}")
+    max_retries = 4
+    last_error = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.post(
+                "https://api.brightdata.com/request",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}",
+                },
+                json={"zone": zone, "url": url, "format": "raw"},
+                timeout=60,
+            )
+            response.raise_for_status()
 
-    return content
+            # Bright Data retorna HTTP 200 mesmo em falhas — checa o body
+            content = response.content
+            content_preview = content[:200].decode("utf-8", errors="ignore")
+            if content_preview.startswith("Request Failed"):
+                last_error = content_preview.strip()
+                print(
+                    f"[AVISO] Web Unlocker tentativa {attempt}/{max_retries} falhou: {last_error}"
+                )
+                if attempt < max_retries:
+                    import time
+
+                    time.sleep(2 * attempt)  # backoff: 2s, 4s, 6s
+                    continue
+                raise RuntimeError(f"[Bright Data] {last_error}")
+
+            print(f"[INFO] Web Unlocker sucesso na tentativa {attempt}/{max_retries}")
+            return content
+
+        except RuntimeError:
+            raise
+        except Exception as e:
+            last_error = str(e)
+            print(f"[AVISO] Web Unlocker tentativa {attempt}/{max_retries} erro: {e}")
+            if attempt < max_retries:
+                import time
+
+                time.sleep(2 * attempt)
+                continue
+            raise
+
+    raise RuntimeError(f"[Bright Data] Todas as tentativas falharam: {last_error}")
 
 
 # Importa todos os parsers da pasta fetchers
