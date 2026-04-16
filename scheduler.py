@@ -125,6 +125,8 @@ class MultiTenantScheduler:
     def trigger_now(self, client_id: str) -> None:
         """Triggers an immediate fetch for a client (redeploy)."""
         print(f"[SCHEDULER] Redeploy imediato para cliente {client_id}")
+        # Marca como pending imediatamente para o frontend não exibir o erro antigo
+        self.client_manager.update_client_status(client_id=client_id, status="pending")
         # Execute diretamente em background thread (mais confiável que date job)
         thread = threading.Thread(target=self._fetch_client, args=[client_id], daemon=True)
         thread.start()
