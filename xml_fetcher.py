@@ -43,7 +43,14 @@ def _fetch_via_web_unlocker(url: str, headers: Dict[str, str]) -> Optional[bytes
         timeout=60,
     )
     response.raise_for_status()
-    return response.content
+
+    # Bright Data retorna HTTP 200 mesmo em falhas — checa o body
+    content = response.content
+    content_preview = content[:200].decode("utf-8", errors="ignore")
+    if content_preview.startswith("Request Failed"):
+        raise RuntimeError(f"[Bright Data] {content_preview.strip()}")
+
+    return content
 
 
 # Importa todos os parsers da pasta fetchers
