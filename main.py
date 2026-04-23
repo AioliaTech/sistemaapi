@@ -953,6 +953,7 @@ def _transform_revendai(vehicle: dict) -> dict:
     return {
         **vehicle,
         "valor_troca": vehicle.get("valor_troca"),
+        "repasse": vehicle.get("repasse"),
     }
 
 
@@ -1165,15 +1166,82 @@ def _format_vehicle_revendai_locadora(vehicle: dict) -> str:
         )
 
 
+def _format_vehicle_revendai(vehicle: dict) -> str:
+    """Formata veículo Revendai para o /list — padrão com repasse no final"""
+    tipo = (vehicle.get("tipo") or "").lower()
+
+    def sv(v):
+        return "" if v is None else str(v)
+
+    opcionais_str = vehicle.get("opcionais", "")
+    codigos_opcionais = opcionais_para_codigos(opcionais_str)
+    codigos_formatados = (
+        f"[{','.join(map(str, codigos_opcionais))}]" if codigos_opcionais else "[]"
+    )
+
+    repasse_val = vehicle.get("repasse", "nao")
+
+    if "moto" in tipo:
+        return ",".join(
+            [
+                sv(vehicle.get("id")),
+                sv(vehicle.get("tipo")),
+                sv(vehicle.get("marca")),
+                sv(vehicle.get("modelo")),
+                sv(vehicle.get("versao")),
+                sv(vehicle.get("cor")),
+                sv(vehicle.get("ano")),
+                sv(vehicle.get("km")),
+                sv(vehicle.get("combustivel")),
+                sv(vehicle.get("cilindrada")),
+                sv(vehicle.get("preco")),
+                sv(repasse_val),
+            ]
+        )
+    else:
+        return ",".join(
+            [
+                sv(vehicle.get("id")),
+                sv(vehicle.get("tipo")),
+                sv(vehicle.get("marca")),
+                sv(vehicle.get("modelo")),
+                sv(vehicle.get("versao")),
+                sv(vehicle.get("cor")),
+                sv(vehicle.get("ano")),
+                sv(vehicle.get("km")),
+                sv(vehicle.get("combustivel")),
+                sv(vehicle.get("cambio")),
+                sv(vehicle.get("motor")),
+                sv(vehicle.get("portas")),
+                sv(vehicle.get("preco")),
+                codigos_formatados,
+                sv(repasse_val),
+            ]
+        )
+
+
 PARSER_LIST_FORMATTERS: Dict[str, Any] = {
     "CovelParser": _format_vehicle_covel,
     "EcosysParser": _format_vehicle_ecosys,
     "RevendamaisParser": _format_vehicle_revendamais,
     "RevendaiLocadoraParser": _format_vehicle_revendai_locadora,
+    "RevendaiParser": _format_vehicle_revendai,
 }
 
 # Instruções customizadas para o endpoint /list por parser
 PARSER_LIST_INSTRUCTIONS: Dict[str, str] = {
+    "RevendaiParser": (
+        "### COMO LER O JSON de 'BuscaEstoque' — Revendai (CRUCIAL — leia cada linha com atenção)\n"
+        "- Para motocicletas (se o segundo valor no JSON for 'moto'):\n"
+        "Código ID, tipo (moto), marca, modelo, versão, cor, ano, quilometragem, combustível, cilindrada, preço, repasse\n"
+        "- Para carros (se o segundo valor no JSON for 'carro'):\n"
+        "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais], repasse\n\n"
+        "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
+        "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
+        "- repasse: 'sim' se o veículo é de repasse, 'nao' se não é\n"
+        "- IMPORTANTE: Os veículos estão separados em dois grupos principais: 'ESTOQUE' (veículos normais, repasse=nao) e 'REPASSE' (veículos de repasse, repasse=sim). "
+        "Dentro de cada grupo, os veículos estão organizados por categoria (Hatch, Sedan, Suv, etc).\n"
+    ),
     "CovelParser": (
         "### COMO LER O JSON de 'BuscaEstoque' — Covel (motos elétricas)\n"
         "Cada item contém os seguintes campos:\n"
@@ -1352,22 +1420,74 @@ def client_list_vehicles(slug: str, request: Request):
             if loc_data["nao_mapeados"]:
                 result[localizacao]["NÃO MAPEADOS"] = loc_data["nao_mapeados"]
     else:
-        categorized_vehicles = {}
-        nao_mapeados = []
-        for vehicle in filtered_vehicles:
-            categoria = vehicle.get("categoria")
-            if not categoria or categoria in ["", "None", None]:
-                nao_mapeados.append(_list_formatter(vehicle))
-                continue
-            # Normaliza categoria para Title Case para evitar duplicatas (ex: "hatch" e "Hatch")
-            categoria_key = categoria.strip().title()
-            if categoria_key not in categorized_vehicles:
-                categorized_vehicles[categoria_key] = []
-            categorized_vehicles[categoria_key].append(_list_formatter(vehicle))
-        for categoria in sorted(categorized_vehicles.keys()):
-            result[categoria] = categorized_vehicles[categoria]
-        if nao_mapeados:
-            result["NÃO MAPEADOS"] = nao_mapeados
+        # Verifica se o parser suporta repasse (apenas RevendaiParser)
+        has_repasse = parser_name == "RevendaiParser"
+
+        if has_repasse:
+            # Separa veículos por repasse
+            veiculos_normais = []
+            veiculos_repasse = []
+            for vehicle in filtered_vehicles:
+                repasse_val = str(vehicle.get("repasse", "nao")).strip().lower()
+                if repasse_val == "sim":
+                    veiculos_repasse.append(vehicle)
+                else:
+                    veiculos_normais.append(vehicle)
+
+            # Grupo ESTOQUE — categorias normais
+            estoque_categorias = {}
+            estoque_nao_mapeados = []
+            for vehicle in veiculos_normais:
+                categoria = vehicle.get("categoria")
+                if not categoria or categoria in ["", "None", None]:
+                    estoque_nao_mapeados.append(_list_formatter(vehicle))
+                    continue
+                categoria_key = categoria.strip().title()
+                if categoria_key not in estoque_categorias:
+                    estoque_categorias[categoria_key] = []
+                estoque_categorias[categoria_key].append(_list_formatter(vehicle))
+            result["ESTOQUE"] = {}
+            for categoria in sorted(estoque_categorias.keys()):
+                result["ESTOQUE"][categoria] = estoque_categorias[categoria]
+            if estoque_nao_mapeados:
+                result["ESTOQUE"]["NÃO MAPEADOS"] = estoque_nao_mapeados
+
+            # Grupo REPASSE — subcategorias dentro de repasse
+            if veiculos_repasse:
+                repasse_categorias = {}
+                repasse_nao_mapeados = []
+                for vehicle in veiculos_repasse:
+                    categoria = vehicle.get("categoria")
+                    if not categoria or categoria in ["", "None", None]:
+                        repasse_nao_mapeados.append(_list_formatter(vehicle))
+                        continue
+                    categoria_key = categoria.strip().title()
+                    if categoria_key not in repasse_categorias:
+                        repasse_categorias[categoria_key] = []
+                    repasse_categorias[categoria_key].append(_list_formatter(vehicle))
+                result["REPASSE"] = {}
+                for categoria in sorted(repasse_categorias.keys()):
+                    result["REPASSE"][categoria] = repasse_categorias[categoria]
+                if repasse_nao_mapeados:
+                    result["REPASSE"]["NÃO MAPEADOS"] = repasse_nao_mapeados
+        else:
+            # Comportamento padrão (sem separação por repasse)
+            categorized_vehicles = {}
+            nao_mapeados = []
+            for vehicle in filtered_vehicles:
+                categoria = vehicle.get("categoria")
+                if not categoria or categoria in ["", "None", None]:
+                    nao_mapeados.append(_list_formatter(vehicle))
+                    continue
+                # Normaliza categoria para Title Case para evitar duplicatas (ex: "hatch" e "Hatch")
+                categoria_key = categoria.strip().title()
+                if categoria_key not in categorized_vehicles:
+                    categorized_vehicles[categoria_key] = []
+                categorized_vehicles[categoria_key].append(_list_formatter(vehicle))
+            for categoria in sorted(categorized_vehicles.keys()):
+                result[categoria] = categorized_vehicles[categoria]
+            if nao_mapeados:
+                result["NÃO MAPEADOS"] = nao_mapeados
 
     return JSONResponse(content=result)
 
