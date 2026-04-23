@@ -90,8 +90,18 @@ class RevendaiParser(BaseParser):
                     "valor_troca": v.get("valor_troca"),
                     "opcionais": opcionais_veiculo,
                     "fotos": v.get("fotos", []),
+                    "repasse": self._normalize_repasse(v.get("repasse")),
                 }
             )
             parsed_vehicles.append(parsed)
 
         return parsed_vehicles
+
+    def _normalize_repasse(self, repasse: Any) -> str:
+        """Normaliza o campo repasse para 'sim' ou 'nao'"""
+        if not repasse:
+            return "nao"
+        repasse_str = str(repasse).strip().lower()
+        if repasse_str in ("sim", "true", "1", "yes", "s"):
+            return "sim"
+        return "nao"

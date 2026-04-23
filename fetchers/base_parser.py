@@ -79,6 +79,7 @@ class BaseParser(ABC):
             "plano_start": vehicle.get("plano_start"),
             "plano_drive": vehicle.get("plano_drive"),
             "plano_km_livre": vehicle.get("plano_km_livre"),
+            "repasse": vehicle.get("repasse"),
         }
 
     def normalize_fotos(self, fotos_data: Any) -> List[str]:

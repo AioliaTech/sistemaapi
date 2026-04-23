@@ -196,6 +196,7 @@ class AltimusParser(BaseParser):
                 "valorVenda": v.get("valor"),
                 "opcionais": ", ".join(opcionais_parts) if opcionais_parts else "",
                 "fotos": fotos,
+                "observacao": v.get("observacao"),
             }
 
             print(
@@ -292,6 +293,7 @@ class AltimusParser(BaseParser):
             "valorVenda": v.get("Preco"),
             "opcionais": ", ".join(opcionais_parts) if opcionais_parts else "",
             "fotos": fotos,
+            "observacao": v.get("Observacao"),
         }
 
     def _parse_xml_string(self, xml_string: str) -> List[Dict]:
@@ -355,6 +357,8 @@ class AltimusParser(BaseParser):
                 ]
             else:
                 veiculo["fotos"] = []
+
+            veiculo["observacao"] = self._get_xml_text(veiculo_element, "Observacao")
 
             print(
                 f"[DEBUG _parse_xml_string] Veículo {idx + 1}: {veiculo.get('marca')} {veiculo.get('modelo')}"
@@ -429,6 +433,7 @@ class AltimusParser(BaseParser):
                     ),
                     "opcionais": opcionais_veiculo,
                     "fotos": v.get("fotos", []),
+                    "observacao": v.get("observacao"),
                 }
             )
             parsed_vehicles.append(parsed)
