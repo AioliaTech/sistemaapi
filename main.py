@@ -1475,6 +1475,49 @@ def client_list_vehicles(slug: str, request: Request):
                     result["REPASSE"][categoria] = repasse_categorias[categoria]
                 if repasse_nao_mapeados:
                     result["REPASSE"]["NÃO MAPEADOS"] = repasse_nao_mapeados
+        elif parser_name == "FordPlusParser":
+            veiculos_novos = []
+            veiculos_seminovos = []
+            for vehicle in filtered_vehicles:
+                km = vehicle.get("km")
+                if km is None or km == 0:
+                    veiculos_novos.append(vehicle)
+                else:
+                    veiculos_seminovos.append(vehicle)
+
+            novos_categorias = {}
+            novos_nao_mapeados = []
+            for vehicle in veiculos_novos:
+                categoria = vehicle.get("categoria")
+                if not categoria or categoria in ["", "None", None]:
+                    novos_nao_mapeados.append(_list_formatter(vehicle))
+                    continue
+                categoria_key = categoria.strip().title()
+                if categoria_key not in novos_categorias:
+                    novos_categorias[categoria_key] = []
+                novos_categorias[categoria_key].append(_list_formatter(vehicle))
+            result["ESTOQUE NOVOS"] = {}
+            for categoria in sorted(novos_categorias.keys()):
+                result["ESTOQUE NOVOS"][categoria] = novos_categorias[categoria]
+            if novos_nao_mapeados:
+                result["ESTOQUE NOVOS"]["NÃO MAPEADOS"] = novos_nao_mapeados
+
+            seminovos_categorias = {}
+            seminovos_nao_mapeados = []
+            for vehicle in veiculos_seminovos:
+                categoria = vehicle.get("categoria")
+                if not categoria or categoria in ["", "None", None]:
+                    seminovos_nao_mapeados.append(_list_formatter(vehicle))
+                    continue
+                categoria_key = categoria.strip().title()
+                if categoria_key not in seminovos_categorias:
+                    seminovos_categorias[categoria_key] = []
+                seminovos_categorias[categoria_key].append(_list_formatter(vehicle))
+            result["ESTOQUE SEMINOVOS"] = {}
+            for categoria in sorted(seminovos_categorias.keys()):
+                result["ESTOQUE SEMINOVOS"][categoria] = seminovos_categorias[categoria]
+            if seminovos_nao_mapeados:
+                result["ESTOQUE SEMINOVOS"]["NÃO MAPEADOS"] = seminovos_nao_mapeados
         else:
             # Comportamento padrão (sem separação por repasse)
             categorized_vehicles = {}
