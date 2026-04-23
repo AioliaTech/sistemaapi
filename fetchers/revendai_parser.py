@@ -97,11 +97,16 @@ class RevendaiParser(BaseParser):
 
         return parsed_vehicles
 
-    def _normalize_repasse(self, repasse: Any) -> str:
-        """Normaliza o campo repasse para 'sim' ou 'nao'"""
+    def _normalize_repasse(self, repasse: Any) -> bool:
+        """Normaliza o campo repasse para boolean (true/false).
+
+        A carga original pode vir como boolean (True/False) ou string ('true'/'false'/'sim'/'nao').
+        """
+        if isinstance(repasse, bool):
+            return repasse
         if not repasse:
-            return "nao"
+            return False
         repasse_str = str(repasse).strip().lower()
-        if repasse_str in ("sim", "true", "1", "yes", "s"):
-            return "sim"
-        return "nao"
+        if repasse_str in ("true", "sim", "1", "yes", "s"):
+            return True
+        return False

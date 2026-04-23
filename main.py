@@ -1179,7 +1179,8 @@ def _format_vehicle_revendai(vehicle: dict) -> str:
         f"[{','.join(map(str, codigos_opcionais))}]" if codigos_opcionais else "[]"
     )
 
-    repasse_val = vehicle.get("repasse", "nao")
+    repasse_val = vehicle.get("repasse", False)
+    repasse_str = "true" if repasse_val else "false"
 
     if "moto" in tipo:
         return ",".join(
@@ -1195,7 +1196,7 @@ def _format_vehicle_revendai(vehicle: dict) -> str:
                 sv(vehicle.get("combustivel")),
                 sv(vehicle.get("cilindrada")),
                 sv(vehicle.get("preco")),
-                sv(repasse_val),
+                repasse_str,
             ]
         )
     else:
@@ -1215,7 +1216,7 @@ def _format_vehicle_revendai(vehicle: dict) -> str:
                 sv(vehicle.get("portas")),
                 sv(vehicle.get("preco")),
                 codigos_formatados,
-                sv(repasse_val),
+                repasse_str,
             ]
         )
 
@@ -1238,8 +1239,8 @@ PARSER_LIST_INSTRUCTIONS: Dict[str, str] = {
         "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais], repasse\n\n"
         "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
         "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
-        "- repasse: 'sim' se o veículo é de repasse, 'nao' se não é\n"
-        "- IMPORTANTE: Os veículos estão separados em dois grupos principais: 'ESTOQUE' (veículos normais, repasse=nao) e 'REPASSE' (veículos de repasse, repasse=sim). "
+        "- repasse: 'true' se o veículo é de repasse, 'false' se não é\n"
+        "- IMPORTANTE: Os veículos estão separados em dois grupos principais: 'ESTOQUE' (veículos normais, repasse=false) e 'REPASSE' (veículos de repasse, repasse=true). "
         "Dentro de cada grupo, os veículos estão organizados por categoria (Hatch, Sedan, Suv, etc).\n"
     ),
     "CovelParser": (
@@ -1428,8 +1429,7 @@ def client_list_vehicles(slug: str, request: Request):
             veiculos_normais = []
             veiculos_repasse = []
             for vehicle in filtered_vehicles:
-                repasse_val = str(vehicle.get("repasse", "nao")).strip().lower()
-                if repasse_val == "sim":
+                if vehicle.get("repasse") is True:
                     veiculos_repasse.append(vehicle)
                 else:
                     veiculos_normais.append(vehicle)
