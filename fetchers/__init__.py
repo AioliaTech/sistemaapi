@@ -30,6 +30,7 @@ from .diamond_parser import DiamondParser
 from .covel_parser import CovelParser
 from .ecosys_parser import EcosysParser
 from .revendai_locadora_parser import RevendaiLocadoraParser
+from .fordplus_parser import FordPlusParser
 
 __all__ = [
     "RevendaiParser",
@@ -60,4 +61,5 @@ __all__ = [
     "DiamondParser",
     "CovelParser",
     "EcosysParser",
+    "FordPlusParser",
 ]

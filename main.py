@@ -1222,6 +1222,7 @@ PARSER_LIST_FORMATTERS: Dict[str, Any] = {
     "RevendamaisParser": _format_vehicle_revendamais,
     "RevendaiLocadoraParser": _format_vehicle_revendai_locadora,
     "RevendaiParser": _format_vehicle_revendai,
+    "FordPlusParser": _format_vehicle_revendai,
 }
 
 # Instruções customizadas para o endpoint /list por parser
@@ -1275,6 +1276,16 @@ PARSER_LIST_INSTRUCTIONS: Dict[str, str] = {
         "- plano_start: valor do plano Start em reais\n"
         "- plano_drive: valor do plano Drive em reais\n"
         "- plano_km_livre: valor do plano Km Livre em reais\n"
+    ),
+    "FordPlusParser": (
+        "### COMO LER O JSON de 'BuscaEstoque' — FordPlus (CRUCIAL — leia cada linha com atenção)\n"
+        "- Para carros (se o segundo valor no JSON for 'carro'):\n"
+        "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais]\n\n"
+        "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
+        "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
+        "- IMPORTANTE: Veículos novos (km vazio) com a mesma versão são agrupados como um único veículo. "
+        "O campo 'cor' pode conter múltiplas cores separadas por vírgula (ex: 'Branco, Preto, Prata'). "
+        "As fotos são o conjunto de todos os veículos agrupados.\n"
     ),
 }
 
@@ -1716,6 +1727,61 @@ def client_lookup_model(slug: str, request: Request):
                 "message": "Modelo de carro não encontrado",
             }
         )
+
+
+# ─── FordPlus individual endpoint ────────────────────────────────────────────
+
+
+@app.get("/fordplus/{slug}/veiculos")
+def fordplus_veiculos(slug: str, request: Request):
+    """Endpoint individual para FordPlusParser com saída customizada."""
+    client = client_manager.get_client_by_slug(slug)
+    if not client:
+        raise HTTPException(status_code=404, detail=f"Cliente '{slug}' não encontrado")
+
+    data = client_manager.load_client_vehicles(slug)
+    if data is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Dados ainda não disponíveis. Aguarde o primeiro deploy.",
+        )
+
+    vehicles = data.get("veiculos", [])
+    if not isinstance(vehicles, list):
+        raise HTTPException(status_code=500, detail="Formato de dados inválido")
+
+    parser_name = getattr(client, "parser_used", None) or ""
+    if parser_name != "FordPlusParser":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Este endpoint é exclusivo para FordPlusParser. Parser atual: {parser_name}",
+        )
+
+    query_params = dict(request.query_params)
+    filter_categoria = query_params.get("categoria")
+    filter_marca = query_params.get("marca")
+
+    filtered = vehicles
+    if filter_categoria:
+        filtered = [
+            v
+            for v in filtered
+            if v.get("categoria")
+            and filter_categoria.lower() in v.get("categoria", "").lower()
+        ]
+    if filter_marca:
+        filtered = [
+            v
+            for v in filtered
+            if v.get("marca") and filter_marca.lower() in v.get("marca", "").lower()
+        ]
+
+    return JSONResponse(
+        content={
+            "veiculos": filtered,
+            "total": len(filtered),
+        }
+    )
 
 
 # ─── Global health ────────────────────────────────────────────────────────────

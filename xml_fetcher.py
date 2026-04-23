@@ -111,6 +111,7 @@ from fetchers import (
     CovelParser,
     EcosysParser,
     RevendaiLocadoraParser,
+    FordPlusParser,
 )
 
 
@@ -144,6 +145,7 @@ class UnifiedVehicleFetcher:
             DiamondParser(),
             CovelParser(),
             EcosysParser(),
+            FordPlusParser(),
         ]
         self.last_parser_used: Optional[str] = None
 
