@@ -279,10 +279,21 @@ class UnifiedVehicleFetcher:
                 response.raise_for_status()
 
                 # Verifica se não foi bloqueado
-                if (
-                    "403" in response.text[:100]
-                    or "forbidden" in response.text[:100].lower()
-                ):
+                # Checa por página de bloqueio HTML (não dados JSON/XML legítimos)
+                # Evita falso positivo: JSON/XML podem conter "403" como substring
+                # de dados (ex: "anoFabricacao": 2008 → "403" em "2008")
+                first_chars = response.text[:300].strip()
+                is_block_page = (
+                    # HTML de bloqueio (Cloudflare, WAF, etc.)
+                    first_chars.startswith("<!DOCTYPE")
+                    or first_chars.startswith("<html")
+                    or "<title>403" in first_chars
+                    or "<title>Forbidden" in first_chars
+                    or "<title>Access Denied" in first_chars
+                    or "HTTP/1.1 403" in first_chars
+                    or "HTTP/2 403" in first_chars
+                )
+                if is_block_page:
                     print(
                         f"[AVISO] Bloqueio detectado na resposta, tentando próximo User-Agent..."
                     )
