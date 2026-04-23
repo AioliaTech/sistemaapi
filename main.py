@@ -1167,7 +1167,7 @@ def _format_vehicle_revendai_locadora(vehicle: dict) -> str:
 
 
 def _format_vehicle_revendai(vehicle: dict) -> str:
-    """Formata veículo Revendai para o /list — padrão com repasse no final"""
+    """Formata veículo Revendai para o /list — formato padrão (repasse já separado em ESTOQUE/REPASSE)"""
     tipo = (vehicle.get("tipo") or "").lower()
 
     def sv(v):
@@ -1178,9 +1178,6 @@ def _format_vehicle_revendai(vehicle: dict) -> str:
     codigos_formatados = (
         f"[{','.join(map(str, codigos_opcionais))}]" if codigos_opcionais else "[]"
     )
-
-    repasse_val = vehicle.get("repasse", False)
-    repasse_str = "true" if repasse_val else "false"
 
     if "moto" in tipo:
         return ",".join(
@@ -1196,7 +1193,6 @@ def _format_vehicle_revendai(vehicle: dict) -> str:
                 sv(vehicle.get("combustivel")),
                 sv(vehicle.get("cilindrada")),
                 sv(vehicle.get("preco")),
-                repasse_str,
             ]
         )
     else:
@@ -1216,7 +1212,6 @@ def _format_vehicle_revendai(vehicle: dict) -> str:
                 sv(vehicle.get("portas")),
                 sv(vehicle.get("preco")),
                 codigos_formatados,
-                repasse_str,
             ]
         )
 
@@ -1234,13 +1229,12 @@ PARSER_LIST_INSTRUCTIONS: Dict[str, str] = {
     "RevendaiParser": (
         "### COMO LER O JSON de 'BuscaEstoque' — Revendai (CRUCIAL — leia cada linha com atenção)\n"
         "- Para motocicletas (se o segundo valor no JSON for 'moto'):\n"
-        "Código ID, tipo (moto), marca, modelo, versão, cor, ano, quilometragem, combustível, cilindrada, preço, repasse\n"
+        "Código ID, tipo (moto), marca, modelo, versão, cor, ano, quilometragem, combustível, cilindrada, preço\n"
         "- Para carros (se o segundo valor no JSON for 'carro'):\n"
-        "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais], repasse\n\n"
+        "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais]\n\n"
         "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
         "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
-        "- repasse: 'true' se o veículo é de repasse, 'false' se não é\n"
-        "- IMPORTANTE: Os veículos estão separados em dois grupos principais: 'ESTOQUE' (veículos normais, repasse=false) e 'REPASSE' (veículos de repasse, repasse=true). "
+        "- IMPORTANTE: Os veículos estão separados em dois grupos principais: 'ESTOQUE' (veículos próprios) e 'REPASSE' (veículos de repasse). "
         "Dentro de cada grupo, os veículos estão organizados por categoria (Hatch, Sedan, Suv, etc).\n"
     ),
     "CovelParser": (
