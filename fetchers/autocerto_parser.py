@@ -120,14 +120,6 @@ class AutocertoParser(BaseParser):
         else:
             return modelo_str or None
     
-    def _extract_motor_from_version(self, versao: str) -> str:
-        """Extrai informações do motor da versão"""
-        if not versao:
-            return None
-        
-        # Pega a primeira palavra da versão que geralmente é o motor
-        words = versao.strip().split()
-        return words[0] if words else None
     
     def _extract_photos(self, v: Dict) -> List[str]:
         """Extrai fotos do veículo Autocerto"""

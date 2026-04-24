@@ -2,7 +2,7 @@
 Parser específico para FordPlus (fordplus)
 """
 
-from .base_parser import BaseParser
+from .base_parser import BaseParser, opcionais_para_codigos
 from typing import Dict, List, Any
 
 
@@ -182,7 +182,74 @@ class FordPlusParser(BaseParser):
         return resultado
 
     def _extract_motor_from_version(self, versao: str) -> str:
-        if not versao:
-            return None
-        words = versao.strip().split()
-        return words[0] if words else None
+        """FordPlus: extrai motor da versão (regex numérica, ex: '2.0')."""
+        return self.extract_motor_from_version(versao)
+
+    # ── Interface de formatação ───────────────────────────────────────────────
+
+    def format_vehicle_csv(self, vehicle: dict) -> str:
+        """CSV FordPlus — mesmo schema Revendai (carro/moto com opcionais como códigos)."""
+        tipo = (vehicle.get("tipo") or "").lower()
+
+        def sv(v):
+            return "" if v is None else str(v)
+
+        codigos = opcionais_para_codigos(vehicle.get("opcionais", ""))
+        codigos_fmt = f"[{','.join(map(str, codigos))}]" if codigos else "[]"
+
+        if "moto" in tipo:
+            return ",".join([
+                sv(vehicle.get("id")), sv(vehicle.get("tipo")),
+                sv(vehicle.get("marca")), sv(vehicle.get("modelo")),
+                sv(vehicle.get("versao")), sv(vehicle.get("cor")),
+                sv(vehicle.get("ano")), sv(vehicle.get("km")),
+                sv(vehicle.get("combustivel")), sv(vehicle.get("cilindrada")),
+                sv(vehicle.get("preco")),
+            ])
+        else:
+            return ",".join([
+                sv(vehicle.get("id")), sv(vehicle.get("tipo")),
+                sv(vehicle.get("marca")), sv(vehicle.get("modelo")),
+                sv(vehicle.get("versao")), sv(vehicle.get("cor")),
+                sv(vehicle.get("ano")), sv(vehicle.get("km")),
+                sv(vehicle.get("combustivel")), sv(vehicle.get("cambio")),
+                sv(vehicle.get("motor")), sv(vehicle.get("portas")),
+                sv(vehicle.get("preco")), codigos_fmt,
+            ])
+
+    def format_list(self, vehicles: list) -> dict:
+        """Separa veículos em ESTOQUE NOVOS (km=0/null) e ESTOQUE SEMINOVOS."""
+        novos = [v for v in vehicles if not v.get("km")]
+        seminovos = [v for v in vehicles if v.get("km")]
+
+        result = {"ESTOQUE NOVOS": self._format_grupo(novos)}
+        result["ESTOQUE SEMINOVOS"] = self._format_grupo(seminovos)
+        return result
+
+    def _format_grupo(self, vehicles: list) -> dict:
+        categorized: dict = {}
+        nao_mapeados: list = []
+        for v in vehicles:
+            categoria = v.get("categoria")
+            csv_line = self.format_vehicle_csv(v)
+            if not categoria or categoria in ["", "None", None]:
+                nao_mapeados.append(csv_line)
+            else:
+                key = categoria.strip().title()
+                categorized.setdefault(key, []).append(csv_line)
+        result = {k: categorized[k] for k in sorted(categorized)}
+        if nao_mapeados:
+            result["NÃO MAPEADOS"] = nao_mapeados
+        return result
+
+    def get_instructions(self) -> str:
+        return (
+            "### COMO LER O JSON de 'BuscaEstoque' — FordPlus (CRUCIAL — leia cada linha com atenção)\n"
+            "- Para carros (se o segundo valor no JSON for 'carro'):\n"
+            "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais]\n\n"
+            "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
+            "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
+            "- IMPORTANTE: Veículos novos (km vazio) com a mesma versão são agrupados como um único veículo. "
+            "O campo 'cor' pode conter múltiplas cores separadas por vírgula (ex: 'Branco, Preto, Prata'). "
+            "As fotos são o conjunto de todos os veículos agrupados.\n"
+        )

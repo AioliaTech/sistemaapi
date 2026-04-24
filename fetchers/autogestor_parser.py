@@ -124,16 +124,4 @@ class AutogestorParser(BaseParser):
         items = [(item or "").strip() for item in acessorios if item and (item or "").strip()]
         return ", ".join(items)
     
-    def _extract_motor_from_version(self, versao: str) -> str:
-        """Extrai informações do motor da versão"""
-        if not versao:
-            return None
-        
-        # Garante que versao é string antes de chamar strip
-        versao_str = str(versao) if versao else ""
-        if not versao_str:
-            return None
-        
-        # Pega a primeira palavra da versão que geralmente é o motor
-        words = versao_str.strip().split()
-        return words[0] if words else None
+

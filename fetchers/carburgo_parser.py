@@ -144,13 +144,6 @@ class CarburgoParser(BaseParser):
         else:
             return modelo_str or None
     
-    def _extract_motor_from_version(self, versao: str) -> str:
-        """Extrai informações do motor da versão"""
-        if not versao:
-            return None
-        
-        words = versao.strip().split()
-        return words[0] if words else None
     
     def _extract_photos(self, v: Dict) -> List[str]:
         """Extrai fotos do veículo Carburgo"""

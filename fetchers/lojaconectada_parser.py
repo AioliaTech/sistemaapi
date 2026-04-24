@@ -4,31 +4,13 @@ Parser específico para Loja Conectada
 
 from .base_parser import BaseParser
 from typing import Dict, List, Any
+from vehicle_mappings import MAPEAMENTO_BODY_STYLE
+
 
 class LojaConectadaParser(BaseParser):
     """Parser para dados da Loja Conectada"""
-    
-    # Mapeamento de categorias específico da Loja Conectada
-    CATEGORIA_MAPPING = {
-        "conversivel/cupe": "Conversível",
-        "conversível/cupê": "Conversível",
-        "conversivel": "Conversível",
-        "picapes": "Caminhonete",
-        "picape": "Caminhonete",
-        "suv / utilitario esportivo": "SUV",
-        "suv / utilitário esportivo": "SUV",
-        "suv": "SUV",
-        "van/utilitario": "Utilitário",
-        "van/utilitário": "Utilitário",
-        "utilitario": "Utilitário",
-        "wagon/perua": "Minivan",
-        "perua": "Minivan",
-        "minivan": "Minivan",
-        "hatch": "Hatch",
-        "sedan": "Sedan",
-        "caminhonete": "Caminhonete",
-        "off-road": "Off-road"
-    }
+
+    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
 
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados da Loja Conectada"""
@@ -128,14 +110,4 @@ class LojaConectadaParser(BaseParser):
 
         return parsed_vehicles
 
-    def _extract_motor_from_version(self, version_name: str) -> str:
-        """Extrai o motor da string da versão (ex: '2.0 TFSI ROADSTER 211CV' -> '2.0')"""
-        if not version_name:
-            return None
 
-        import re
-        # Procura por padrão de motor no início: dígitos.pontodígitos
-        match = re.match(r'^(\d+\.\d+)', version_name.strip())
-        if match:
-            return match.group(1)
-        return None

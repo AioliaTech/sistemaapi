@@ -6,31 +6,13 @@ from .base_parser import BaseParser
 from typing import Dict, List, Any, Optional
 import requests
 import os
+from vehicle_mappings import MAPEAMENTO_BODY_STYLE
+
 
 class SimplesVeiculoParser(BaseParser):
     """Parser para dados do SimplesVeiculo"""
-    
-    # Mapeamento de categorias específico do SimplesVeiculo
-    CATEGORIA_MAPPING = {
-        "conversivel/cupe": "Conversível",
-        "conversível/cupê": "Conversível",
-        "conversivel": "Conversível",
-        "picapes": "Caminhonete",
-        "picape": "Caminhonete",
-        "suv / utilitario esportivo": "SUV",
-        "suv / utilitário esportivo": "SUV",
-        "suv": "SUV",
-        "van/utilitario": "Utilitário",
-        "van/utilitário": "Utilitário",
-        "utilitario": "Utilitário",
-        "wagon/perua": "Minivan",
-        "perua": "Minivan",
-        "minivan": "Minivan",
-        "hatch": "Hatch",
-        "sedan": "Sedan",
-        "caminhonete": "Caminhonete",
-        "off-road": "Off-road"
-    }
+
+    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do SimplesVeiculo"""
@@ -40,13 +22,15 @@ class SimplesVeiculoParser(BaseParser):
         """Processa dados do SimplesVeiculo"""
         listings = data.get("listings", {})
         veiculos = listings.get("listing", [])
-        
-        # Normaliza para lista se for um único veículo
+
         if isinstance(veiculos, dict):
             veiculos = [veiculos]
-        
+
+        # Carrega preços da fonte secundária UMA VEZ (não por veículo)
+        secondary_prices = self._load_secondary_prices()
+
         parsed_vehicles = []
-        
+
         for v in veiculos:
             if not isinstance(v, dict):
                 continue
@@ -111,9 +95,10 @@ class SimplesVeiculoParser(BaseParser):
             # Processa câmbio
             cambio_final = self._map_transmission(v.get("transmission", ""))
             
-            # BUSCA O PREÇO DA FONTE SECUNDÁRIA
-            preco_secundario = self._fetch_price_from_secondary_source(vehicle_id)
-            preco_final = preco_secundario if preco_secundario is not None else self.converter_preco(v.get("price"))
+            # Usa preço da fonte secundária se disponível
+            preco_final = secondary_prices.get(str(vehicle_id)) if secondary_prices else None
+            if preco_final is None:
+                preco_final = self.converter_preco(v.get("price"))
             
             parsed = self.normalize_vehicle({
                 "id": vehicle_id,
@@ -141,32 +126,27 @@ class SimplesVeiculoParser(BaseParser):
         
         return parsed_vehicles
     
-    def _fetch_price_from_secondary_source(self, vehicle_id: str) -> Optional[float]:
-        """Busca o preço do veículo na fonte secundária (XML_URL_2)"""
+    def _load_secondary_prices(self) -> dict:
+        """
+        Carrega todos os preços da fonte secundária (XML_URL_2) UMA VEZ por ciclo de parse.
+        Retorna dict {str(id): float(preco)} ou dict vazio se indisponível.
+        Antes: fazia 1 request HTTP por veículo. Agora: 1 request por parse.
+        """
         try:
             xml_url_2 = os.environ.get('XML_URL_2')
             if not xml_url_2:
-                return None
-                
+                return {}
             response = requests.get(xml_url_2, timeout=30)
             response.raise_for_status()
-            
             price_data = response.json()
-            
-            # O JSON é um array de objetos com estrutura:
-            # [{"id": "344364", "valor": "19000.00", ...}, ...]
-            
-            for vehicle in price_data:
-                if str(vehicle.get("id")) == str(vehicle_id):
-                    valor = vehicle.get("valor")
-                    if valor:
-                        return self.converter_preco(valor)
-            
-            return None
-            
+            return {
+                str(item.get("id")): self.converter_preco(item.get("valor"))
+                for item in price_data
+                if item.get("id") and item.get("valor")
+            }
         except Exception as e:
-            print(f"Erro ao buscar preço da fonte secundária: {e}")
-            return None
+            print(f"[WARN] SimplesVeiculoParser: erro ao carregar preços secundários: {e}")
+            return {}
     
     def _extract_modelo_base(self, modelo_completo: str, marca: str) -> str:
         """Extrai o modelo base da string completa - Exemplo: "QQ 1.0 ACT 12V 69cv 5p" -> "QQ" """
@@ -286,15 +266,7 @@ class SimplesVeiculoParser(BaseParser):
         
         return versao.strip() if versao.strip() else None
     
-    def _extract_motor_info(self, modelo_completo: str) -> Optional[str]:
-        """Extrai informações do motor do modelo completo"""
-        if not modelo_completo:
-            return None
-        
-        # Busca padrão de cilindrada (ex: 1.0, 1.4, 2.0, 1.6)
-        import re
-        motor_match = re.search(r'\b(\d+\.\d+)\b', modelo_completo)
-        return motor_match.group(1) if motor_match else None
+
     
     def _normalize_color(self, color: str) -> Optional[str]:
         """Normaliza a cor removendo formatação estranha"""

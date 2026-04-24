@@ -2,33 +2,15 @@
 Parser específico para Revendamais (revendamais.com.br)
 """
 
-from .base_parser import BaseParser
+from .base_parser import BaseParser, opcionais_para_codigos
 from typing import Dict, List, Any
+from vehicle_mappings import MAPEAMENTO_BODY_STYLE
+
 
 class RevendamaisParser(BaseParser):
     """Parser para dados do Revendamais"""
-    
-    # Mapeamento de categorias específico do Revendamais
-    CATEGORIA_MAPPING = {
-        "conversivel/cupe": "Conversível",
-        "conversível/cupê": "Conversível",
-        "conversivel": "Conversível",
-        "picapes": "Caminhonete",
-        "picape": "Caminhonete",
-        "suv / utilitario esportivo": "SUV",
-        "suv / utilitário esportivo": "SUV",
-        "suv": "SUV",
-        "van/utilitario": "Utilitário",
-        "van/utilitário": "Utilitário",
-        "utilitario": "Utilitário",
-        "wagon/perua": "Minivan",
-        "perua": "Minivan",
-        "minivan": "Minivan",
-        "hatch": "Hatch",
-        "sedan": "Sedan",
-        "caminhonete": "Caminhonete",
-        "off-road": "Off-road"
-    }
+
+    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do Revendamais, Hey Veículos ou Piccoli Automóveis"""
@@ -130,5 +112,57 @@ class RevendamaisParser(BaseParser):
             ]
         elif isinstance(images, dict) and images.get("IMAGE_URL"):
             return [images["IMAGE_URL"]]
-        
+
         return []
+
+    # ── Interface de formatação ───────────────────────────────────────────────
+
+    def format_vehicle_csv(self, vehicle: dict) -> str:
+        """CSV padrão carro/moto com campo 'blindado' no final."""
+        tipo = (vehicle.get("tipo") or "").lower()
+
+        def sv(v):
+            return "" if v is None else str(v)
+
+        codigos = opcionais_para_codigos(vehicle.get("opcionais", ""))
+        codigos_fmt = f"[{','.join(map(str, codigos))}]" if codigos else "[]"
+
+        blindado_val = vehicle.get("blindado")
+        if blindado_val is True:
+            blindado_str = "true"
+        elif blindado_val is False:
+            blindado_str = "false"
+        else:
+            blindado_str = ""
+
+        if "moto" in tipo:
+            return ",".join([
+                sv(vehicle.get("id")), sv(vehicle.get("tipo")),
+                sv(vehicle.get("marca")), sv(vehicle.get("modelo")),
+                sv(vehicle.get("versao")), sv(vehicle.get("cor")),
+                sv(vehicle.get("ano")), sv(vehicle.get("km")),
+                sv(vehicle.get("combustivel")), sv(vehicle.get("cilindrada")),
+                sv(vehicle.get("preco")), blindado_str,
+            ])
+        else:
+            return ",".join([
+                sv(vehicle.get("id")), sv(vehicle.get("tipo")),
+                sv(vehicle.get("marca")), sv(vehicle.get("modelo")),
+                sv(vehicle.get("versao")), sv(vehicle.get("cor")),
+                sv(vehicle.get("ano")), sv(vehicle.get("km")),
+                sv(vehicle.get("combustivel")), sv(vehicle.get("cambio")),
+                sv(vehicle.get("motor")), sv(vehicle.get("portas")),
+                sv(vehicle.get("preco")), codigos_fmt, blindado_str,
+            ])
+
+    def get_instructions(self) -> str:
+        return (
+            "### COMO LER O JSON de 'BuscaEstoque' (CRUCIAL — leia cada linha com atenção)\n"
+            "- Para motocicletas (se o segundo valor no JSON for 'moto'):\n"
+            "Código ID, tipo (moto), marca, modelo, versão, cor, ano, quilometragem, combustível, cilindrada, preço, blindado\n"
+            "- Para carros (se o segundo valor no JSON for 'carro'):\n"
+            "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais], blindado\n\n"
+            "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
+            "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
+            "- blindado: 'true' se o veículo é blindado, 'false' se não é, vazio se não informado\n"
+        )

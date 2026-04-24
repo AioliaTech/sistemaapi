@@ -83,6 +83,40 @@ class EcosysParser(BaseParser):
 
         return parsed_vehicles
 
+    # ── Interface de formatação ───────────────────────────────────────────────
+
+    def transform(self, vehicle: dict) -> dict:
+        """Reduz o schema para campos relevantes do Ecosys."""
+        return {
+            "id": vehicle.get("id"),
+            "modelo": vehicle.get("modelo"),
+            "descricao": vehicle.get("observacao"),
+            "preco": vehicle.get("preco"),
+            "fotos": vehicle.get("fotos", []),
+        }
+
+    def format_vehicle_csv(self, vehicle: dict) -> str:
+        """CSV mínimo Ecosys: id, modelo, preco."""
+        def sv(v):
+            return "" if v is None else str(v)
+        return ",".join([
+            sv(vehicle.get("id")),
+            sv(vehicle.get("modelo")),
+            sv(vehicle.get("preco")),
+        ])
+
+    def get_instructions(self) -> str:
+        return (
+            "### COMO LER O JSON de 'BuscaEstoque' — EcosysAuto\n"
+            "Cada item contém os seguintes campos:\n"
+            "id, modelo, preco\n"
+            "- id: identificador único do veículo\n"
+            "- modelo: nome do modelo do veículo\n"
+            "- preco: preço de venda em reais\n"
+        )
+
+    # ── Métodos de parsing ────────────────────────────────────────────────────
+
     def _extrair_id(self, id_raw: str) -> str:
         """Extrai o ID após o '_' (ex: '22170_30130' → '30130')"""
         if not id_raw:

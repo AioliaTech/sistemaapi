@@ -481,10 +481,4 @@ class AltimusParser(BaseParser):
         else:
             return cambio
 
-    def _extract_motor_from_version(self, versao: str) -> str:
-        """Extrai informações do motor da versão"""
-        if not versao:
-            return None
 
-        motor_match = re.search(r"\b(\d+\.\d+)\b", str(versao))
-        return motor_match.group(1) if motor_match else None

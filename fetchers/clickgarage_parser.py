@@ -228,17 +228,6 @@ class ClickGarageParser(BaseParser):
         
         return versao_limpa
     
-    def _extract_motor_info(self, modelo_completo: str) -> Optional[str]:
-        """
-        Extrai informações do motor do modelo completo
-        Exemplo: "CRUZE Premier 1.4 16V TB Flex Aut." -> "1.4"
-        """
-        if not modelo_completo:
-            return None
-        
-        # Busca padrão de cilindrada (ex: 1.4, 2.0, 1.6)
-        motor_match = re.search(r'\b(\d+\.\d+)\b', modelo_completo)
-        return motor_match.group(1) if motor_match else None
     
     def _extract_cambio_info(self, modelo_completo: str) -> Optional[str]:
         """

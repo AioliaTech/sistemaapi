@@ -2,7 +2,7 @@
 Parser específico para Revendai Locadora (integrador.revendai.com.br/api/client/.../locadora)
 """
 
-from .base_parser import BaseParser
+from .base_parser import BaseParser, opcionais_para_codigos
 from typing import Dict, List, Any
 import re
 
@@ -96,3 +96,54 @@ class RevendaiLocadoraParser(BaseParser):
             parsed_vehicles.append(parsed)
 
         return parsed_vehicles
+
+    # ── Interface de formatação ───────────────────────────────────────────────
+
+    def format_vehicle_csv(self, vehicle: dict) -> str:
+        """CSV padrão carro/moto com campos de planos de locação no final."""
+        tipo = (vehicle.get("tipo") or "").lower()
+
+        def sv(v):
+            return "" if v is None else str(v)
+
+        codigos = opcionais_para_codigos(vehicle.get("opcionais", ""))
+        codigos_fmt = f"[{','.join(map(str, codigos))}]" if codigos else "[]"
+        planos = ",".join([
+            sv(vehicle.get("plano_start")),
+            sv(vehicle.get("plano_drive")),
+            sv(vehicle.get("plano_km_livre")),
+        ])
+
+        if "moto" in tipo:
+            return ",".join([
+                sv(vehicle.get("id")), sv(vehicle.get("tipo")),
+                sv(vehicle.get("marca")), sv(vehicle.get("modelo")),
+                sv(vehicle.get("versao")), sv(vehicle.get("cor")),
+                sv(vehicle.get("ano")), sv(vehicle.get("km")),
+                sv(vehicle.get("combustivel")), sv(vehicle.get("cilindrada")),
+                sv(vehicle.get("preco")), planos,
+            ])
+        else:
+            return ",".join([
+                sv(vehicle.get("id")), sv(vehicle.get("tipo")),
+                sv(vehicle.get("marca")), sv(vehicle.get("modelo")),
+                sv(vehicle.get("versao")), sv(vehicle.get("cor")),
+                sv(vehicle.get("ano")), sv(vehicle.get("km")),
+                sv(vehicle.get("combustivel")), sv(vehicle.get("cambio")),
+                sv(vehicle.get("motor")), sv(vehicle.get("portas")),
+                sv(vehicle.get("preco")), codigos_fmt, planos,
+            ])
+
+    def get_instructions(self) -> str:
+        return (
+            "### COMO LER O JSON de 'BuscaEstoque' — Revendai Locadora (CRUCIAL — leia cada linha com atenção)\n"
+            "- Para motocicletas (se o segundo valor no JSON for 'moto'):\n"
+            "Código ID, tipo (moto), marca, modelo, versão, cor, ano, quilometragem, combustível, cilindrada, preço, plano_start, plano_drive, plano_km_livre\n"
+            "- Para carros (se o segundo valor no JSON for 'carro'):\n"
+            "Código ID, tipo (carro), marca, modelo, versão, cor, ano, quilometragem, combustível, câmbio, motor, portas, preço, [opcionais], plano_start, plano_drive, plano_km_livre\n\n"
+            "- Para os opcionais dos carros, alguns números podem aparecer. Aqui está o significado de cada número:\n"
+            "1 - ar-condicionado\n2 - airbag\n3 - vidros elétricos\n4 - freios ABS\n5 - direção hidráulica\n6 - direção elétrica\n7 - sete lugares\n"
+            "- plano_start: valor do plano Start em reais\n"
+            "- plano_drive: valor do plano Drive em reais\n"
+            "- plano_km_livre: valor do plano Km Livre em reais\n"
+        )

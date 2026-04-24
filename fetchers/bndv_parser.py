@@ -6,32 +6,13 @@ from .base_parser import BaseParser
 from typing import Dict, List, Any
 import json
 import re
+from vehicle_mappings import MAPEAMENTO_BODY_STYLE
 
 
 class BndvParser(BaseParser):
     """Parser para dados do BNDV"""
-    
-    # Mapeamento de categorias específico do BNDV
-    CATEGORIA_MAPPING = {
-        "conversivel/cupe": "Conversível",
-        "conversível/cupê": "Conversível",
-        "conversivel": "Conversível",
-        "picapes": "Caminhonete",
-        "picape": "Caminhonete",
-        "suv / utilitario esportivo": "SUV",
-        "suv / utilitário esportivo": "SUV",
-        "suv": "SUV",
-        "van/utilitario": "Utilitário",
-        "van/utilitário": "Utilitário",
-        "utilitario": "Utilitário",
-        "wagon/perua": "Minivan",
-        "perua": "Minivan",
-        "minivan": "Minivan",
-        "hatch": "Hatch",
-        "sedan": "Sedan",
-        "caminhonete": "Caminhonete",
-        "off-road": "Off-road"
-    }
+
+    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do BNDV"""
@@ -141,14 +122,4 @@ class BndvParser(BaseParser):
         except (json.JSONDecodeError, AttributeError):
             return []
     
-    def _extract_motor_from_version(self, versao: str) -> str:
-        """Extrai informações do motor da versão"""
-        if not versao:
-            return None
-        
-        # Procura por padrões como "1.0", "1.5", "2.0", etc.
-        match = re.search(r'\b(\d\.\d)\b', versao)
-        if match:
-            return match.group(1)
-        
-        return None
+

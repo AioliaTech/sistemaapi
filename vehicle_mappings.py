@@ -426,3 +426,29 @@ MAPEAMENTO_MOTOS = {
 
 # Mapeamento legado apenas para cilindrada (compatibilidade)
 MAPEAMENTO_CILINDRADAS = {modelo: cilindrada for modelo, (cilindrada, _) in MAPEAMENTO_MOTOS.items()}
+
+
+# ─── Mapeamento de body_style/categoria vinda da fonte ────────────────────────
+# Traduz os labels que chegam nos XMLs/JSONs das fontes (ex: "suv / utilitario esportivo")
+# para as categorias canônicas do sistema.
+# Anteriormente copiado em 6 parsers — agora existe em um único lugar.
+MAPEAMENTO_BODY_STYLE = {
+    "conversivel/cupe":           "Conversível",
+    "conversível/cupê":           "Conversível",
+    "conversivel":                "Conversível",
+    "picapes":                    "Caminhonete",
+    "picape":                     "Caminhonete",
+    "suv / utilitario esportivo": "SUV",
+    "suv / utilitário esportivo": "SUV",
+    "suv":                        "SUV",
+    "van/utilitario":             "Utilitário",
+    "van/utilitário":             "Utilitário",
+    "utilitario":                 "Utilitário",
+    "wagon/perua":                "Minivan",
+    "perua":                      "Minivan",
+    "minivan":                    "Minivan",
+    "hatch":                      "Hatch",
+    "sedan":                      "Sedan",
+    "caminhonete":                "Caminhonete",
+    "off-road":                   "Off-road",
+}

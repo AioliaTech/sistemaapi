@@ -75,14 +75,6 @@ class RevendaproParser(BaseParser):
         
         return parsed_vehicles
     
-    def _extract_motor_from_version(self, versao: str) -> str:
-        """Extrai informações do motor da versão"""
-        if not versao:
-            return ""
-        
-        # Pega a primeira palavra da versão que geralmente é o motor
-        words = versao.strip().split()
-        return words[0] if words else ""
     
     def _extract_photos(self, v: Dict[str, Any]) -> List[str]:
         """Extrai fotos do veículo RevendaPro"""

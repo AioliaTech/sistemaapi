@@ -132,6 +132,44 @@ class CovelParser(BaseParser):
             return (primeira.get("name") or "").strip()
         return ""
 
+    # ── Interface de formatação ───────────────────────────────────────────────
+
+    def transform(self, vehicle: dict) -> dict:
+        """Reduz o schema para campos relevantes do Covel (motos elétricas)."""
+        fotos = vehicle.get("fotos") or []
+        return {
+            "id": vehicle.get("id"),
+            "marca": vehicle.get("marca"),
+            "modelo": vehicle.get("modelo"),
+            "descricao": vehicle.get("observacao"),
+            "preco": vehicle.get("preco"),
+            "foto": fotos[0] if fotos else None,
+        }
+
+    def format_vehicle_csv(self, vehicle: dict) -> str:
+        """CSV mínimo Covel: id, marca, modelo, preco."""
+        def sv(v):
+            return "" if v is None else str(v)
+        return ",".join([
+            sv(vehicle.get("id")),
+            sv(vehicle.get("marca")),
+            sv(vehicle.get("modelo")),
+            sv(vehicle.get("preco")),
+        ])
+
+    def get_instructions(self) -> str:
+        return (
+            "### COMO LER O JSON de 'BuscaEstoque' — Covel (motos elétricas)\n"
+            "Cada item contém os seguintes campos:\n"
+            "id, marca, modelo, preco\n"
+            "- id: identificador único do produto\n"
+            "- marca: fabricante da moto elétrica\n"
+            "- modelo: nome completo do modelo\n"
+            "- preco: preço de venda em reais\n"
+        )
+
+    # ── Métodos de parsing ────────────────────────────────────────────────────
+
     def _extrair_fotos(self, images: Any) -> List[str]:
         """Extrai URLs das imagens (campo src de cada objeto)"""
         if not images or not isinstance(images, list):

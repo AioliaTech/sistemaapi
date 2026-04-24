@@ -4,31 +4,13 @@ Parser específico para RevendaPlus (revendaplus.com.br)
 
 from .base_parser import BaseParser
 from typing import Dict, List, Any
+from vehicle_mappings import MAPEAMENTO_BODY_STYLE
+
 
 class RevendaPlusParser(BaseParser):
     """Parser para dados do RevendaPlus"""
-    
-    # Mapeamento de categorias específico do RevendaPlus
-    CATEGORIA_MAPPING = {
-        "conversivel/cupe": "Conversível",
-        "conversível/cupê": "Conversível",
-        "conversivel": "Conversível",
-        "picapes": "Caminhonete",
-        "picape": "Caminhonete",
-        "suv / utilitario esportivo": "SUV",
-        "suv / utilitário esportivo": "SUV",
-        "suv": "SUV",
-        "van/utilitario": "Utilitário",
-        "van/utilitário": "Utilitário",
-        "utilitario": "Utilitário",
-        "wagon/perua": "Minivan",
-        "perua": "Minivan",
-        "minivan": "Minivan",
-        "hatch": "Hatch",
-        "sedan": "Sedan",
-        "caminhonete": "Caminhonete",
-        "off-road": "Off-road"
-    }
+
+    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
 
     def _safe_float(self, value: Any, default: float = None) -> float:
         """Converte valor para float de forma segura"""

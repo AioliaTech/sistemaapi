@@ -126,14 +126,7 @@ class AdmycarParser(BaseParser):
         # Se só tiver um ano, usa como modelo
         return None, year_str.strip()
     
-    def _extract_motor_from_version(self, versao: str) -> str:
-        """Extrai informações do motor da versão"""
-        if not versao:
-            return None
-        
-        # Pega a primeira palavra da versão que geralmente é o motor
-        words = versao.strip().split()
-        return words[0] if words else None
+
     
     def _extract_photos(self, ad: Dict) -> List[str]:
         """Extrai fotos do veículo Admycar"""

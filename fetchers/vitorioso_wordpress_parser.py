@@ -272,13 +272,6 @@ class WordPressParser(BaseParser):
         normalized.sort(key=extract_number)
         return normalized
     
-    def _extract_motor_info(self, versao: str) -> Optional[str]:
-        """Extrai informação do motor da versão"""
-        if not versao:
-            return None
-        
-        motor_match = re.search(r'\b(\d+\.\d+)\b', versao)
-        return motor_match.group(1) if motor_match else None
     
     def _clean_version(self, versao: str) -> str:
         """Limpa a versão removendo informações técnicas redundantes"""

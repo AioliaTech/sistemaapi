@@ -5,23 +5,13 @@ Parser específico para Autoconf
 from .base_parser import BaseParser
 from typing import Dict, List, Any
 import re
+from vehicle_mappings import MAPEAMENTO_BODY_STYLE
+
 
 class AutoconfParser(BaseParser):
     """Parser para dados do Autoconf"""
-    
-    # Mapeamento de categorias específico do Autoconf
-    CATEGORIA_MAPPING = {
-        "conversivel/cupe": "Conversível",
-        "conversível/cupê": "Conversível", 
-        "picapes": "Caminhonete",
-        "suv / utilitario esportivo": "SUV",
-        "suv / utilitário esportivo": "SUV",
-        "suv": "SUV",
-        "van/utilitario": "Utilitário",
-        "van/utilitário": "Utilitário",
-        "wagon/perua": "Minivan",
-        "perua": "Minivan"
-    }
+
+    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do Autoconf"""

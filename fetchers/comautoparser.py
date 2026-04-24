@@ -2,38 +2,36 @@ from .base_parser import BaseParser
 from typing import Dict, List, Any, Optional
 import re
 import os
-
-# Mapeamento de URLs para localizações baseado nas variáveis de ambiente
-URL_LOCALIZACAO_MAP = {
-    os.getenv("XML_URL_1", ""): "montenegro",
-    os.getenv("XML_URL_2", ""): "santa luzia",
-    os.getenv("XML_URL_3", ""): "motomecânica"
-}
+import functools
 
 class ComautoParser1(BaseParser):
     """Parser para dados do AGSistema"""
-    
+
+    @functools.cached_property
+    def _url_localizacao_map(self) -> dict:
+        """
+        Lê env vars em tempo de execução (não no import) e faz cache por instância.
+        Corrige o bug onde variáveis ausentes no boot ficavam como chaves vazias para sempre.
+        """
+        return {
+            os.getenv("XML_URL_1", ""): "montenegro",
+            os.getenv("XML_URL_2", ""): "santa luzia",
+            os.getenv("XML_URL_3", ""): "motomecânica",
+        }
+
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do AGSistema"""
-        # Proteção contra url None ou vazia
         if not url:
             return False
-        
-        url = url.lower()
-        return "s3.agsistema.net" in url
-    
+        return "s3.agsistema.net" in url.lower()
+
     def _get_localizacao(self, url: str) -> str:
-        """Determina a localização baseado na URL"""
+        """Determina a localização baseado na URL."""
         if not url:
             return ""
-        
-        # Busca exata no mapeamento
-        localizacao = URL_LOCALIZACAO_MAP.get(url, "")
-        
-        # Se não encontrou no mapeamento exato, verifica se é AGSistema (fallback)
+        localizacao = self._url_localizacao_map.get(url, "")
         if not localizacao and "s3.agsistema.net" in url.lower():
             return "montenegro"
-        
         return localizacao
     
     def parse(self, data: Any, url: str) -> List[Dict]:
@@ -118,23 +116,27 @@ class ComautoParser1(BaseParser):
 
 class ComautoParser2(BaseParser):
     """Parser para dados do MotorLeads"""
-    
+
+    @functools.cached_property
+    def _url_localizacao_map(self) -> dict:
+        """Lê env vars em tempo de execução (não no import) e faz cache por instância."""
+        return {
+            os.getenv("XML_URL_1", ""): "montenegro",
+            os.getenv("XML_URL_2", ""): "santa luzia",
+            os.getenv("XML_URL_3", ""): "motomecânica",
+        }
+
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do MotorLeads"""
-        # Proteção contra url None ou vazia
         if not url:
             return False
-        
-        url = url.lower()
-        return "api.motorleads.co" in url
-    
+        return "api.motorleads.co" in url.lower()
+
     def _get_localizacao(self, url: str) -> str:
-        """Determina a localização baseado na URL"""
+        """Determina a localização baseado na URL."""
         if not url:
             return ""
-        
-        # Busca exata no mapeamento
-        return URL_LOCALIZACAO_MAP.get(url, "")
+        return self._url_localizacao_map.get(url, "")
     
     def parse(self, data: Any, url: str) -> List[Dict]:
         """Processa dados do MotorLeads"""
@@ -281,14 +283,6 @@ class ComautoParser2(BaseParser):
         
         return versao_limpa if versao_limpa else None
     
-    def _extract_motor_info(self, versao: str) -> Optional[str]:
-        """Extrai informações do motor da versão"""
-        if not versao:
-            return None
-        
-        # Busca padrão de cilindrada (ex: 1.4, 2.0, 1.6)
-        motor_match = re.search(r'\b(\d+\.\d+)\b', versao)
-        return motor_match.group(1) if motor_match else None
     
     def _extract_photos_motorleads(self, gallery: List) -> List[str]:
         """Extrai fotos da galeria do MotorLeads"""
