@@ -67,7 +67,7 @@ class MultiTenantScheduler:
         job = self.scheduler.add_job(
             self._fetch_all_clients,
             "cron",
-            hour="0,2,4,6,8,10,12,14,16,18,20,22",
+            hour="0,4,8,12,16,20",
             minute=0,
             second=0,
             id=job_id,
