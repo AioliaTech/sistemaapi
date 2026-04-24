@@ -247,6 +247,22 @@ class BaseParser(ABC):
 
         tipo = vehicle.get("tipo", "")
 
+        # ── Normaliza opcionais para string (protege contra XML aninhado) ────
+        # Parsers podem receber opcionais como dict {"opcional":[...]} ou lista
+        # vinda do parse de XML aninhado (<opcionais><opcional>…</opcional></opcionais>).
+        opcionais_raw = vehicle.get("opcionais", "")
+        if isinstance(opcionais_raw, dict):
+            items = opcionais_raw.get("opcional", opcionais_raw.get("item", []))
+            if isinstance(items, str):
+                items = [items]
+            vehicle["opcionais"] = ", ".join(str(i) for i in items if i)
+        elif isinstance(opcionais_raw, list):
+            vehicle["opcionais"] = ", ".join(str(i) for i in opcionais_raw if i)
+        elif opcionais_raw is None:
+            vehicle["opcionais"] = ""
+        else:
+            vehicle["opcionais"] = str(opcionais_raw)
+
         # ── Categorização de carros: 3 etapas via VehicleCategorizer ────────
         # Parsers atualizados definem vehicle["body_style_carga"] com o valor
         #   raw da fonte → VehicleCategorizer sempre roda (Etapa 1 disponível).
