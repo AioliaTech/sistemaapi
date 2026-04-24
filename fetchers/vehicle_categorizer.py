@@ -142,35 +142,58 @@ class VehicleCategorizer:
     def _detect_from_mapping(self, vehicle_data: Dict) -> Optional[str]:
         """
         Usa mapeamento de modelos com sistema de scoring.
+        Tenta em cascata: modelo → versao → modelo+versao → titulo → tudo junto.
+        Só avança para o próximo se o anterior não encontrar nada — sem risco
+        de regressão pois só entra em ação quando o resultado seria None.
         """
-        modelo = vehicle_data.get("modelo", "")
-        if not modelo:
+        modelo = vehicle_data.get("modelo", "") or ""
+        versao  = vehicle_data.get("versao",  "") or ""
+        titulo  = vehicle_data.get("titulo",  "") or ""
+
+        # Cascata de tentativas: do mais específico ao mais abrangente
+        candidatos = [
+            modelo,
+            versao,
+            f"{modelo} {versao}".strip(),
+            titulo,
+            f"{modelo} {versao} {titulo}".strip(),
+        ]
+
+        for texto in candidatos:
+            resultado = self._buscar_no_mapeamento(texto)
+            if resultado:
+                return resultado
+
+        return None
+
+    def _buscar_no_mapeamento(self, texto: str) -> Optional[str]:
+        """
+        Busca um texto livre no MAPEAMENTO_CATEGORIAS com scoring.
+        Retorna a categoria de maior score ou None se não encontrar.
+        """
+        if not texto:
             return None
-        
-        modelo_norm = self._normalize_text(modelo)
-        
-        # Busca no mapeamento pelo MELHOR match
+
+        texto_norm = self._normalize_text(texto)
+        if not texto_norm:
+            return None
+
         matches = []
-        
+
         for modelo_mapeado, categoria_result in self.mapeamento.items():
             modelo_mapeado_norm = self._normalize_text(modelo_mapeado)
-            
-            if modelo_mapeado_norm in modelo_norm:
-                # Score: número de palavras + comprimento
+
+            if modelo_mapeado_norm in texto_norm:
                 palavras_mapeado = modelo_mapeado_norm.split()
-                palavras_modelo = modelo_norm.split()
-                palavras_match = sum(1 for p in palavras_mapeado if p in palavras_modelo)
+                palavras_texto   = texto_norm.split()
+                palavras_match   = sum(1 for p in palavras_mapeado if p in palavras_texto)
                 score = (palavras_match * 100) + len(modelo_mapeado_norm)
-                
-                matches.append({
-                    'categoria': categoria_result,
-                    'score': score
-                })
-        
+                matches.append({"categoria": categoria_result, "score": score})
+
         if matches:
-            matches.sort(key=lambda x: x['score'], reverse=True)
-            return matches[0]['categoria']
-        
+            matches.sort(key=lambda x: x["score"], reverse=True)
+            return matches[0]["categoria"]
+
         return None
     
     def _resolve_ambiguous(self, vehicle_data: Dict) -> str:
