@@ -7,7 +7,9 @@ Inicialização da aplicação FastAPI. Toda a lógica está nos módulos:
   - fetchers/        → parsers
 """
 
+import os
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -21,6 +23,18 @@ from route_public import router as public_router
 
 app = FastAPI(title="RevendAI Panel", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# ─── Photo cache static serving ───────────────────────────────────────────────
+# Serve as fotos cacheadas via /f quando o sistema de cache estiver ativo.
+# Requer: PHOTO_CACHE_ENABLED=true e PHOTO_DIR existindo (bind mount na stack).
+
+if os.getenv("PHOTO_CACHE_ENABLED", "false").strip().lower() == "true":
+    _photo_dir = os.getenv("PHOTO_DIR", "/mnt/api-estoque-carmillion")
+    if Path(_photo_dir).is_dir():
+        app.mount("/f", StaticFiles(directory=_photo_dir), name="fotos")
+        print(f"[APP] Photo cache ativo: servindo '{_photo_dir}' em /f")
+    else:
+        print(f"[APP] ⚠️  PHOTO_CACHE_ENABLED=true mas '{_photo_dir}' não existe — /f não montado")
 
 # ─── Routers ──────────────────────────────────────────────────────────────────
 

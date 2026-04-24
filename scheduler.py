@@ -80,27 +80,39 @@ class MultiTenantScheduler:
     
     def _fetch_all_clients(self) -> None:
         """Fetches data for ALL clients at once."""
+        from photo_cache import photo_cache  # import lazy — evita circular na inicialização
+
         now_local = datetime.now(self.timezone)
         print("=" * 80)
         print(f"[SCHEDULER] 🔄 ATUALIZAÇÃO GLOBAL iniciada em {now_local}")
         print("=" * 80)
-        
+
         clients = self.client_manager.list_clients()
         total = len(clients)
         success = 0
         errors = 0
-        
+
         print(f"[SCHEDULER] Atualizando {total} cliente(s)...")
-        
-        for i, client in enumerate(clients, 1):
-            try:
-                print(f"[SCHEDULER] [{i}/{total}] Processando '{client.name}' ({client.slug})...")
-                self._fetch_client(client.id)
-                success += 1
-            except Exception as e:
-                errors += 1
-                print(f"[SCHEDULER] ❌ Erro ao processar '{client.name}': {e}")
-        
+
+        # Marca todas as fotos como não-vistas antes de processar os clientes.
+        # O cycle_end() no finally remove as que ficarem seen=0 (órfãs).
+        photo_cache.cycle_start()
+
+        try:
+            for i, client in enumerate(clients, 1):
+                try:
+                    print(f"[SCHEDULER] [{i}/{total}] Processando '{client.name}' ({client.slug})...")
+                    self._fetch_client(client.id)
+                    success += 1
+                except Exception as e:
+                    errors += 1
+                    print(f"[SCHEDULER] ❌ Erro ao processar '{client.name}': {e}")
+        finally:
+            # Roda mesmo se o loop explodir — remove arquivos de fotos órfãs do disco e do SQLite.
+            removed = photo_cache.cycle_end()
+            if removed:
+                print(f"[SCHEDULER] 🗑️  Fotos órfãs removidas: {removed}")
+
         print("=" * 80)
         print(f"[SCHEDULER] ✓ ATUALIZAÇÃO GLOBAL concluída!")
         print(f"[SCHEDULER]   - Total: {total} clientes")
@@ -169,7 +181,13 @@ class MultiTenantScheduler:
                 all_vehicles.extend(result.get("veiculos", []))
                 if result.get("_parser_used"):
                     parser_used = result.get("_parser_used")
-            
+
+            # Resolve URLs de fotos para URLs curtas via Photo Cache.
+            # No-op se PHOTO_CACHE_ENABLED=false ou PHOTO_DIR não existir.
+            from photo_cache import photo_cache  # import lazy
+            if photo_cache.is_enabled():
+                all_vehicles = photo_cache.resolve_all_vehicles_sync(all_vehicles)
+
             # Save combined result
             from xml_fetcher import UnifiedVehicleFetcher
             fetcher = UnifiedVehicleFetcher()
