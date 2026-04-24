@@ -94,6 +94,8 @@ class PhotoCache:
         self._db_path: str = os.getenv(
             "PHOTO_DB_PATH", "/app/data/photo_cache.db"
         )
+        # Anon key para buckets Supabase que exigem apikey mesmo sendo públicos
+        self._supabase_anon_key: str = os.getenv("SUPABASE_ANON_KEY", "")
 
         if self._enabled:
             if Path(self._photo_dir).is_dir():
@@ -273,7 +275,12 @@ class PhotoCache:
         Retorna True em sucesso, False em qualquer exceção (erro logado, sem raise).
         """
         try:
-            resp = await http.get(url)
+            # Supabase Storage exige o header apikey mesmo em buckets públicos
+            extra_headers = {}
+            if "supabase.co" in url and self._supabase_anon_key:
+                extra_headers["apikey"] = self._supabase_anon_key
+
+            resp = await http.get(url, headers=extra_headers)
             resp.raise_for_status()
             content = resp.content
 
