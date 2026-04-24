@@ -143,11 +143,11 @@ class VehicleCategorizer:
           3a) Palavras-chave explícitas (HATCH, SUV, PICKUP, etc.)
           3b) Scoring no mapeamento usando titulo, observacao e texto completo.
         """
-        titulo     = vehicle_data.get("titulo",     "") or ""
-        modelo     = vehicle_data.get("modelo",     "") or ""
-        versao     = vehicle_data.get("versao",     "") or ""
-        observacao = vehicle_data.get("observacao", "") or ""
-        opcionais  = vehicle_data.get("opcionais",  "") or ""
+        titulo     = str(vehicle_data.get("titulo",     "") or "")
+        modelo     = str(vehicle_data.get("modelo",     "") or "")
+        versao     = str(vehicle_data.get("versao",     "") or "")
+        observacao = str(vehicle_data.get("observacao", "") or "")
+        opcionais  = str(vehicle_data.get("opcionais",  "") or "")
 
         texto_completo = " ".join([titulo, modelo, versao, observacao, opcionais]).upper()
 
@@ -231,9 +231,9 @@ class VehicleCategorizer:
           4. Padrão → Sedan
         """
         portas    = vehicle_data.get("portas")
-        opcionais = vehicle_data.get("opcionais", "") or ""
-        modelo    = vehicle_data.get("modelo",    "") or ""
-        titulo    = vehicle_data.get("titulo",    "") or ""
+        opcionais = str(vehicle_data.get("opcionais", "") or "")
+        modelo    = str(vehicle_data.get("modelo",    "") or "")
+        titulo    = str(vehicle_data.get("titulo",    "") or "")
 
         if portas == 5:
             return "Hatch"

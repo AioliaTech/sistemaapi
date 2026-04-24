@@ -25,7 +25,16 @@ class FronteiraParser(BaseParser):
         for v in ads:
             modelo_veiculo = v.get("modelo")
             versao_veiculo = v.get("titulo")
-            opcionais_veiculo = v.get("opcionais") or ""
+
+            # opcionais vem como dict aninhado {"opcional": [...]} ou string
+            opcionais_raw = v.get("opcionais") or {}
+            if isinstance(opcionais_raw, dict):
+                items = opcionais_raw.get("opcional", [])
+                if isinstance(items, str):
+                    items = [items]
+                opcionais_veiculo = ", ".join(str(i) for i in items if i)
+            else:
+                opcionais_veiculo = str(opcionais_raw)
             
             # Determina se é moto ou carro
             categoria_veiculo = v.get("CATEGORY", "").lower()
