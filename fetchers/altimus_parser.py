@@ -396,9 +396,8 @@ class AltimusParser(BaseParser):
                     )
                 )
             else:
-                categoria_final = self.definir_categoria_veiculo(
-                    modelo_veiculo, opcionais_veiculo
-                )
+                # Sem campo de carroceria na carga — VehicleCategorizer usa Etapas 2 e 3
+                categoria_final = None
                 cilindrada_final = None
 
             tipo_final = self._determine_tipo(tipo_veiculo, is_moto)

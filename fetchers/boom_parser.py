@@ -45,7 +45,7 @@ class BoomParser(BaseParser):
                 )
                 tipo_final = "moto"
             else:
-                # Processa opcionais ANTES da categorização (necessário para detectar hatch/sedan)
+                # Processa opcionais
                 opcionais_str = ""
                 opcional = v.get('opcional')
                 if opcional and isinstance(opcional, dict) and 'item' in opcional:
@@ -54,19 +54,9 @@ class BoomParser(BaseParser):
                         opcionais_str = ", ".join(str(item) for item in items if item)
                     elif items:
                         opcionais_str = str(items)
-                
-                # HIERARQUIA DE CATEGORIZAÇÃO:
-                # 1. Busca "hatch" ou "sedan" em titulo e modelo
-                texto_busca = f"{titulo_veiculo or ''} {modelo_veiculo or ''}".upper()
-                if "HATCH" in texto_busca:
-                    categoria_final = "Hatch"
-                elif "SEDAN" in texto_busca:
-                    categoria_final = "Sedan"
-                else:
-                    # 2. Infere do nosso mapeamento com sistema de scoring
-                    # IMPORTANTE: Passa opcionais_str para detectar "limpador traseiro"
-                    categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_str)
-                
+
+                # Sem campo de carroceria na carga — VehicleCategorizer usa Etapas 2 e 3
+                categoria_final = None
                 cilindrada_final = None
                 tipo_final = tipo_veiculo
             

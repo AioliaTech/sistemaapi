@@ -4,13 +4,8 @@ Parser específico para RevendaPlus (revendaplus.com.br)
 
 from .base_parser import BaseParser
 from typing import Dict, List, Any
-from vehicle_mappings import MAPEAMENTO_BODY_STYLE
-
-
 class RevendaPlusParser(BaseParser):
     """Parser para dados do RevendaPlus"""
-
-    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
 
     def _safe_float(self, value: Any, default: float = None) -> float:
         """Converte valor para float de forma segura"""
@@ -81,6 +76,7 @@ class RevendaPlusParser(BaseParser):
             tipo_veiculo = v.get("tipo", "").lower()
             is_moto = tipo_veiculo == "moto" or "moto" in tipo_veiculo
             
+            body_style_carga = None
             if is_moto:
                 # Para motos, usa a potência como cilindrada
                 potencia = v.get("potencia")
@@ -88,28 +84,9 @@ class RevendaPlusParser(BaseParser):
                 categoria_final = v.get("especie", "")
                 tipo_final = "moto"
             else:
-                # HIERARQUIA DE CATEGORIZAÇÃO:
-                # 1. Usa campo especie do JSON se disponível
-                especie = v.get("especie", "")
-                especie_lower = especie.lower().strip() if especie else ""
-                categoria_especie = self.CATEGORIA_MAPPING.get(especie_lower, None)
-                
-                if categoria_especie:
-                    categoria_final = categoria_especie
-                elif especie:
-                    # Se especie existe mas não está no mapeamento, usa direto
-                    categoria_final = especie
-                else:
-                    # 2. Busca "hatch" ou "sedan" no modelo
-                    texto_busca = f"{modelo_veiculo or ''}".upper()
-                    if "HATCH" in texto_busca:
-                        categoria_final = "Hatch"
-                    elif "SEDAN" in texto_busca:
-                        categoria_final = "Sedan"
-                    else:
-                        # 3. Infere do nosso mapeamento com sistema de scoring
-                        categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo)
-                
+                # Etapa 1: passa valor raw da carga para o VehicleCategorizer
+                body_style_carga = v.get("especie", "")
+                categoria_final  = None
                 cilindrada_final = None
                 tipo_final = v.get("tipo", "")
 
@@ -142,6 +119,7 @@ class RevendaPlusParser(BaseParser):
                 "motor": v.get("potencia"),
                 "portas": None,
                 "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": preco_value,
                 "opcionais": opcionais_veiculo,

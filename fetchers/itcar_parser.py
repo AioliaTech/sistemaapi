@@ -53,8 +53,8 @@ class ItcarParser(BaseParser):
                     modelo, versao
                 )
             else:
-                # Para carros, usa a categoria do mapeamento
-                categoria_final = self.definir_categoria_veiculo(modelo, opcionais_str, versao)
+                # Sem campo de carroceria na carga — VehicleCategorizer usa Etapas 2 e 3
+                categoria_final = None
                 cilindrada_final = None
             
             # Extrai ano de fabricação e modelo

@@ -61,8 +61,8 @@ class WordPressParser(BaseParser):
             # Processa anos
             ano_fabricacao, ano_modelo = self._extract_anos(ano_campo)
             
-            # Determina categoria
-            categoria_final = self.definir_categoria_veiculo(modelo, opcionais)
+            # Sem campo de carroceria na carga — VehicleCategorizer usa Etapas 2 e 3
+            categoria_final = None
             
             # Extrai motor
             motor_info = self._extract_motor_info(versao or "")

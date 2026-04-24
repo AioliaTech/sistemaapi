@@ -13,24 +13,6 @@ class AdmycarParser(BaseParser):
         """Verifica se pode processar dados do Admycar"""
         return "admycar.com" in url.lower()
     
-    def _detectar_categoria_em_texto(self, modelo: str, versao: str, title: str) -> str:
-        """
-        Detecta categoria HATCH ou SEDAN nos campos modelo, versao e title.
-        Retorna a categoria encontrada ou None se não encontrar.
-        """
-        # Concatena modelo, versão e título para buscar
-        texto_completo = f"{modelo or ''} {versao or ''} {title or ''}".upper()
-        
-        # Busca por HATCH primeiro
-        if "HATCH" in texto_completo:
-            return "Hatch"
-        
-        # Busca por SEDAN
-        if "SEDAN" in texto_completo:
-            return "Sedan"
-        
-        return None
-    
     def parse(self, data: Any, url: str) -> List[Dict]:
         """Processa dados do Admycar"""
         # Pega os anúncios
@@ -57,17 +39,8 @@ class AdmycarParser(BaseParser):
                     modelo, versao
                 )
             else:
-                # Tenta detectar categoria em modelo, versão e título
-                categoria_detectada = self._detectar_categoria_em_texto(
-                    modelo, versao, title
-                )
-                
-                if categoria_detectada:
-                    categoria_final = categoria_detectada
-                else:
-                    # Se não encontrou, usa a função existente com o modelo completo
-                    categoria_final = self.definir_categoria_veiculo(modelo, opcionais_str)
-                
+                # Sem campo de carroceria na carga — VehicleCategorizer usa Etapas 2 e 3
+                categoria_final = None
                 cilindrada_final = None
             
             # Extrai ano modelo e ano fabricação do campo year (formato: "YYYY/YYYY")

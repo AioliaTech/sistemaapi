@@ -5,13 +5,8 @@ Parser específico para Autoconf
 from .base_parser import BaseParser
 from typing import Dict, List, Any
 import re
-from vehicle_mappings import MAPEAMENTO_BODY_STYLE
-
-
 class AutoconfParser(BaseParser):
     """Parser para dados do Autoconf"""
-
-    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do Autoconf"""
@@ -34,31 +29,16 @@ class AutoconfParser(BaseParser):
             categoria_veiculo_lower = categoria_veiculo.lower() if categoria_veiculo else ""
             is_moto = categoria_veiculo_lower == "motos" or "moto" in categoria_veiculo_lower
             
+            body_style_carga = None
             if is_moto:
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
                     modelo_veiculo, versao_veiculo
                 )
                 tipo_final = "moto"
             else:
-                # HIERARQUIA DE CATEGORIZAÇÃO:
-                # 1. Usa campo BODY do XML se disponível
-                body_category = v.get("BODY", "")
-                body_category_lower = body_category.lower().strip() if body_category else ""
-                categoria_body = self.CATEGORIA_MAPPING.get(body_category_lower, None)
-                
-                if categoria_body:
-                    categoria_final = categoria_body
-                else:
-                    # 2. Busca "hatch" ou "sedan" no modelo completo e versão
-                    texto_busca = f"{modelo_veiculo or ''} {versao_veiculo or ''}".upper()
-                    if "HATCH" in texto_busca:
-                        categoria_final = "Hatch"
-                    elif "SEDAN" in texto_busca:
-                        categoria_final = "Sedan"
-                    else:
-                        # 3. Infere do nosso mapeamento com sistema de scoring
-                        categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo) or "Não informado"
-                    
+                # Etapa 1: passa valor raw da carga para o VehicleCategorizer
+                body_style_carga = v.get("BODY", "")
+                categoria_final  = None
                 cilindrada_final = None
                 tipo_final = "carro" if categoria_veiculo_lower == "carros" else categoria_veiculo
 
@@ -78,6 +58,7 @@ class AutoconfParser(BaseParser):
                 "motor": v.get("MOTOR"),
                 "portas": v.get("DOORS"),
                 "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": self.converter_preco(v.get("PRICE")),
                 "opcionais": opcionais_veiculo,

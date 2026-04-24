@@ -13,24 +13,6 @@ class AutogestorParser(BaseParser):
         """Verifica se pode processar dados do AutoGestor"""
         return "agsistema.net" in url.lower()
     
-    def _detectar_categoria_em_texto(self, modelo: str, versao: str, carroceria: str, titulo: str) -> str:
-        """
-        Detecta categoria HATCH ou SEDAN nos campos modelo, versao, carroceria e titulo.
-        Retorna a categoria encontrada ou None se não encontrar.
-        """
-        # Concatena modelo, versão, carroceria e título para buscar
-        texto_completo = f"{modelo or ''} {versao or ''} {carroceria or ''} {titulo or ''}".upper()
-        
-        # Busca por HATCH primeiro
-        if "HATCH" in texto_completo:
-            return "Hatch"
-        
-        # Busca por SEDAN
-        if "SEDAN" in texto_completo:
-            return "Sedan"
-        
-        return None
-    
     def parse(self, data: Any, url: str) -> List[Dict]:
         """Processa dados do AutoGestor"""
         # Pega os veículos
@@ -63,23 +45,15 @@ class AutogestorParser(BaseParser):
             categoria_veiculo = v.get("categoria", "").lower()
             is_moto = "moto" in categoria_veiculo
             
+            body_style_carga = None
             if is_moto:
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
                     modelo, versao
                 )
             else:
-                # Tenta detectar categoria em modelo, versão, carroceria e título
-                categoria_detectada = self._detectar_categoria_em_texto(
-                    modelo, versao, carroceria, titulo
-                )
-                
-                if categoria_detectada:
-                    categoria_final = categoria_detectada
-                else:
-                    # Se não encontrou, usa a função existente com o modelo completo
-                    categoria_final = self.definir_categoria_veiculo(modelo, opcionais_str)
-                
-                # Usa cilindradas do JSON se for carro
+                # Etapa 1: passa carroceria raw da carga para o VehicleCategorizer
+                body_style_carga = carroceria or ""
+                categoria_final  = None
                 cilindrada_final = v.get("cilindradas")
             
             # Extrai preço do objeto preco.venda
@@ -103,6 +77,7 @@ class AutogestorParser(BaseParser):
                 "motor": self._extract_motor_from_version(versao),
                 "portas": v.get("portas"),
                 "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": self.converter_preco(preco_venda),
                 "opcionais": opcionais_str,

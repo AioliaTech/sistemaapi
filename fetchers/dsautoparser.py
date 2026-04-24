@@ -29,11 +29,10 @@ class DSAutoEstoqueParser(BaseParser):
             tipo_veiculo = self._extract_text(v.get("tipoveiculo")).lower()
             is_moto = "moto" in tipo_veiculo or "motocicleta" in tipo_veiculo
             
-            # Tenta extrair categoria de "carroceria", senão usa definir_categoria_veiculo
-            categoria_final = self._extract_text(v.get("carroceria"))
-            if not categoria_final:
-                categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo)
-            
+            # Etapa 1: passa carroceria raw da carga para o VehicleCategorizer
+            body_style_carga = self._extract_text(v.get("carroceria")) or ""
+            categoria_final  = None
+
             if is_moto:
                 cilindrada_final, _ = self.inferir_cilindrada_e_categoria_moto(
                     modelo_veiculo, versao_veiculo
@@ -57,6 +56,7 @@ class DSAutoEstoqueParser(BaseParser):
                 "motor": self._extract_motor_from_version(versao_veiculo),
                 "portas": self._extract_int(v.get("portas")),
                 "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": self.converter_preco(self._extract_text(v.get("preco"))),
                 "opcionais": opcionais_veiculo,

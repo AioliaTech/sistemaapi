@@ -43,6 +43,7 @@ class RevendaiLocadoraParser(BaseParser):
             tipo_veiculo = (v.get("tipo") or "").lower()
             is_moto = tipo_veiculo == "moto" or "motocicleta" in tipo_veiculo
 
+            body_style_carga = None
             if is_moto:
                 cilindrada_final, categoria_final = (
                     self.inferir_cilindrada_e_categoria_moto(
@@ -51,9 +52,9 @@ class RevendaiLocadoraParser(BaseParser):
                 )
                 tipo_final = "moto"
             else:
-                categoria_final = self.definir_categoria_veiculo(
-                    modelo_veiculo, opcionais_veiculo
-                )
+                # Etapa 1: passa categoria raw da carga para o VehicleCategorizer
+                body_style_carga = v.get("categoria", "") or ""
+                categoria_final  = None
                 cilindrada_final = v.get("cilindrada")
                 tipo_final = tipo_veiculo
 
@@ -82,7 +83,8 @@ class RevendaiLocadoraParser(BaseParser):
                     "cambio": v.get("cambio"),
                     "motor": v.get("motor"),
                     "portas": v.get("portas"),
-                    "categoria": v.get("categoria") or categoria_final,
+                    "categoria": categoria_final,
+                    "body_style_carga": body_style_carga,
                     "cilindrada": cilindrada_final,
                     "preco": v.get("preco"),
                     "valor_troca": v.get("valor_troca"),

@@ -245,16 +245,28 @@ class BaseParser(ABC):
         fotos = vehicle.get("fotos", [])
         vehicle["fotos"] = self.normalize_fotos(fotos)
 
-        categoria_atual = vehicle.get("categoria")
-        if not categoria_atual or categoria_atual in [None, "", "Não informado"]:
-            try:
-                if not hasattr(self, "categorizer"):
-                    self.categorizer = VehicleCategorizer()
-                categoria_inferida = self.categorizer.categorize(vehicle)
-                vehicle["categoria"] = categoria_inferida
-            except Exception as e:
-                print(f"[WARN] Erro ao categorizar veículo {vehicle.get('id')}: {e}")
-                vehicle["categoria"] = None
+        tipo = vehicle.get("tipo", "")
+
+        # ── Categorização de carros: 3 etapas via VehicleCategorizer ────────
+        # Parsers atualizados definem vehicle["body_style_carga"] com o valor
+        #   raw da fonte → VehicleCategorizer sempre roda (Etapa 1 disponível).
+        # Parsers legados (sem body_style_carga) que já setaram categoria:
+        #   respeitamos o que definiram durante a transição.
+        # Parsers legados com categoria vazia/None: VehicleCategorizer roda
+        #   pelas Etapas 2 e 3.
+        if tipo != "moto":
+            categoria_atual = vehicle.get("categoria")
+            tem_body_style  = bool(vehicle.get("body_style_carga"))
+
+            if tem_body_style or not categoria_atual or categoria_atual in ["", "Não informado"]:
+                try:
+                    if not hasattr(self, "categorizer"):
+                        self.categorizer = VehicleCategorizer()
+                    categoria_inferida = self.categorizer.categorize(vehicle)
+                    if categoria_inferida:
+                        vehicle["categoria"] = categoria_inferida
+                except Exception as e:
+                    print(f"[WARN] Erro ao categorizar veículo {vehicle.get('id')}: {e}")
 
         return {
             "id": vehicle.get("id"),
@@ -343,6 +355,10 @@ class BaseParser(ABC):
         self, modelo: str, opcionais: str = "", version: str = ""
     ) -> Optional[str]:
         """
+        [DEPRECATED] Não chamar diretamente nos parsers.
+        A categorização agora é feita pelo VehicleCategorizer via normalize_vehicle().
+        Parsers devem definir vehicle["body_style_carga"] com o valor raw da fonte.
+
         Define categoria por modelo usando scoring de palavras.
         Hierarquia: 'hatch'/'sedan' no modelo → mapeamento por score → None.
         """

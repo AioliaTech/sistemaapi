@@ -6,13 +6,8 @@ from .base_parser import BaseParser
 from typing import Dict, List, Any, Optional
 import requests
 import os
-from vehicle_mappings import MAPEAMENTO_BODY_STYLE
-
-
 class SimplesVeiculoParser(BaseParser):
     """Parser para dados do SimplesVeiculo"""
-
-    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do SimplesVeiculo"""
@@ -52,6 +47,7 @@ class SimplesVeiculoParser(BaseParser):
             # SimplesVeiculo usa 'car_truck' para carros e 'motorcycle' para motos
             is_moto = vehicle_type == "motorcycle" or "moto" in vehicle_type
             
+            body_style_carga = None
             if is_moto:
                 # Para motos: usa o sistema com modelo E versão
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
@@ -59,30 +55,9 @@ class SimplesVeiculoParser(BaseParser):
                 )
                 tipo_final = "moto"
             else:
-                # HIERARQUIA DE CATEGORIZAÇÃO:
-                # 1. Usa campo body_style do XML se disponível
-                body_style = v.get("body_style", "")
-                body_style_lower = body_style.lower().strip() if body_style else ""
-                categoria_body = self.CATEGORIA_MAPPING.get(body_style_lower, None)
-                
-                description = v.get("description", "")
-                
-                if categoria_body:
-                    categoria_final = categoria_body
-                elif body_style:
-                    # Se body_style existe mas não está no mapeamento, usa direto
-                    categoria_final = body_style
-                else:
-                    # 2. Busca "hatch" ou "sedan" em model e description
-                    texto_busca = f"{modelo_completo or ''} {description or ''}".upper()
-                    if "HATCH" in texto_busca:
-                        categoria_final = "Hatch"
-                    elif "SEDAN" in texto_busca:
-                        categoria_final = "Sedan"
-                    else:
-                        # 3. Infere do nosso mapeamento com sistema de scoring
-                        categoria_final = self.definir_categoria_veiculo(modelo_final, "")
-                
+                # Etapa 1: passa valor raw da carga para o VehicleCategorizer
+                body_style_carga = v.get("body_style", "")
+                categoria_final  = None
                 cilindrada_final = None
                 tipo_final = "carro"
             
@@ -116,6 +91,7 @@ class SimplesVeiculoParser(BaseParser):
                 "motor": motor_info,
                 "portas": None,  # Não fornecido explicitamente
                 "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": preco_final,
                 "opcionais": v.get("description"),  # SimplesVeiculo não fornece opcionais neste formato

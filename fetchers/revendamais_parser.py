@@ -4,13 +4,8 @@ Parser específico para Revendamais (revendamais.com.br)
 
 from .base_parser import BaseParser, opcionais_para_codigos
 from typing import Dict, List, Any
-from vehicle_mappings import MAPEAMENTO_BODY_STYLE
-
-
 class RevendamaisParser(BaseParser):
     """Parser para dados do Revendamais"""
-
-    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do Revendamais, Hey Veículos ou Piccoli Automóveis"""
@@ -34,34 +29,16 @@ class RevendamaisParser(BaseParser):
             categoria_veiculo = v.get("CATEGORY", "").lower()
             is_moto = categoria_veiculo == "motocicleta" or "moto" in categoria_veiculo
             
+            body_style_carga = None
             if is_moto:
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
                     modelo_veiculo, versao_veiculo
                 )
                 tipo_final = "moto"
             else:
-                # HIERARQUIA DE CATEGORIZAÇÃO:
-                # 1. Usa campo BODY_TYPE do XML se disponível
-                body_type = v.get("BODY_TYPE", "")
-                body_type_lower = body_type.lower().strip() if body_type else ""
-                categoria_body = self.CATEGORIA_MAPPING.get(body_type_lower, None)
-                
-                if categoria_body:
-                    categoria_final = categoria_body
-                elif body_type:
-                    # Se BODY_TYPE existe mas não está no mapeamento, usa direto
-                    categoria_final = body_type
-                else:
-                    # 2. Busca "hatch" ou "sedan" no modelo e versão
-                    texto_busca = f"{modelo_veiculo or ''} {versao_veiculo or ''}".upper()
-                    if "HATCH" in texto_busca:
-                        categoria_final = "Hatch"
-                    elif "SEDAN" in texto_busca:
-                        categoria_final = "Sedan"
-                    else:
-                        # 3. Infere do nosso mapeamento com sistema de scoring
-                        categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo)
-                
+                # Etapa 1: passa valor raw da carga para o VehicleCategorizer
+                body_style_carga = v.get("BODY_TYPE", "")
+                categoria_final  = None
                 cilindrada_final = None
                 tipo_final = v.get("CATEGORY")
 
@@ -88,6 +65,7 @@ class RevendamaisParser(BaseParser):
                 "motor": v.get("MOTOR"),
                 "portas": v.get("DOORS"),
                 "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": self.converter_preco(v.get("PRICE")),
                 "blindado": blindado,

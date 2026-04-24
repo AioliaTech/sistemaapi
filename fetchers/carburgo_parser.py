@@ -49,13 +49,15 @@ class CarburgoParser(BaseParser):
             tipo_veiculo = (v.get("tipo") or "").lower()
             is_moto = "moto" in tipo_veiculo or "motocicleta" in tipo_veiculo
 
+            body_style_carga = None
             if is_moto:
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
                     modelo_veiculo, versao_veiculo
                 )
             else:
-                # Usa o tipo do XML se existir, senão infere pela categoria usando BaseParser
-                categoria_final = v.get("tipo") or self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo or "")
+                # Etapa 1: passa tipo raw da carga para o VehicleCategorizer
+                body_style_carga = v.get("tipo", "") or ""
+                categoria_final  = None
                 cilindrada_final = v.get("cilindradas")
 
             placa = v.get("placa", "")
@@ -77,6 +79,7 @@ class CarburgoParser(BaseParser):
                 "motor": self._extract_motor_from_version(versao_veiculo),
                 "portas": v.get("portas"),
                 "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": self.converter_preco(v.get("preco")),
                 "opcionais": opcionais_veiculo,

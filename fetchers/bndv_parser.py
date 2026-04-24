@@ -6,13 +6,8 @@ from .base_parser import BaseParser
 from typing import Dict, List, Any
 import json
 import re
-from vehicle_mappings import MAPEAMENTO_BODY_STYLE
-
-
 class BndvParser(BaseParser):
     """Parser para dados do BNDV"""
-
-    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
     
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados do BNDV"""
@@ -44,23 +39,8 @@ class BndvParser(BaseParser):
             # Processa opcionais
             opcionais_veiculo = self._parse_opcionais(v.get("itemJs"))
             
-            # HIERARQUIA DE CATEGORIZAÇÃO:
-            # 1. Usa campo subCategoryName do JSON se disponível
-            subcategory_lower = subcategory.lower().strip() if subcategory else ""
-            categoria_subcategory = self.CATEGORIA_MAPPING.get(subcategory_lower, None)
-            
-            if categoria_subcategory:
-                categoria_final = categoria_subcategory
-            else:
-                # 2. Busca "hatch" ou "sedan" no modelo e versão
-                texto_busca = f"{modelo or ''} {versao or ''}".upper()
-                if "HATCH" in texto_busca:
-                    categoria_final = "Hatch"
-                elif "SEDAN" in texto_busca:
-                    categoria_final = "Sedan"
-                else:
-                    # 3. Infere do nosso mapeamento com sistema de scoring
-                    categoria_final = self.definir_categoria_veiculo(modelo, opcionais_veiculo)
+            # Etapa 1: passa valor raw da carga para o VehicleCategorizer
+            body_style_carga = subcategory or ""
             
             # Usa a placa ao contrário como ID
             placa = v.get("plate")
@@ -81,7 +61,7 @@ class BndvParser(BaseParser):
                 "cambio": v.get("transmissionName"),
                 "motor": self._extract_motor_from_version(versao),
                 "portas": None,
-                "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": None,
                 "preco": v.get("saleValue"),
                 "opcionais": opcionais_veiculo,

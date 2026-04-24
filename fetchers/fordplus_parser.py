@@ -56,9 +56,8 @@ class FordPlusParser(BaseParser):
                 self.inferir_cilindrada_e_categoria_moto(modelo_veiculo, versao_veiculo)
             )
         else:
-            categoria_final = self.definir_categoria_veiculo(
-                modelo_veiculo, opcionais_veiculo
-            )
+            # Sem campo de carroceria na carga — VehicleCategorizer usa Etapas 2 e 3
+            categoria_final = None
             cilindrada_final = None
 
         return self.normalize_vehicle(
@@ -148,9 +147,8 @@ class FordPlusParser(BaseParser):
                     )
                 )
             else:
-                categoria_final = self.definir_categoria_veiculo(
-                    modelo_veiculo, opcionais_final
-                )
+                # Sem campo de carroceria na carga — VehicleCategorizer usa Etapas 2 e 3
+                categoria_final = None
                 cilindrada_final = None
 
             parsed = self.normalize_vehicle(

@@ -185,27 +185,16 @@ class NetcarParser(BaseParser):
             tipo_veiculo = v.get("tipo_veiculo", "0")
             is_moto = tipo_veiculo == "1"  # Assumindo 1 = moto, 0 = carro
             
+            body_style_carga = None
             if is_moto:
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
                     modelo_veiculo, descricao
                 )
                 tipo_final = "moto"
             else:
-                # Pega categoria direto do XML se disponível
-                categoria_xml = v.get("categoria_veiculo", "")
-                
-                if categoria_xml:
-                    categoria_final = categoria_xml
-                else:
-                    # Tenta inferir da descrição/modelo
-                    texto_busca = f"{modelo_veiculo or ''} {descricao or ''}".upper()
-                    if "HATCH" in texto_busca:
-                        categoria_final = "Hatch"
-                    elif "SEDAN" in texto_busca:
-                        categoria_final = "Sedan"
-                    else:
-                        categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_str)
-                
+                # Etapa 1: passa categoria_veiculo raw da carga para o VehicleCategorizer
+                body_style_carga = v.get("categoria_veiculo", "") or ""
+                categoria_final  = None
                 cilindrada_final = None
                 tipo_final = "carro"
             
@@ -225,6 +214,7 @@ class NetcarParser(BaseParser):
                 "motor": v.get("motor"),
                 "portas": v.get("portas"),
                 "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": preco,
                 "opcionais": opcionais_str,

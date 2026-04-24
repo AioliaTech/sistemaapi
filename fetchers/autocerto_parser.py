@@ -13,24 +13,6 @@ class AutocertoParser(BaseParser):
         """Verifica se pode processar dados do Autocerto"""
         return "autocerto.com" in url.lower()
     
-    def _detectar_categoria_em_texto(self, modelo: str, versao: str, observacoes: str) -> str:
-        """
-        Detecta categoria HATCH ou SEDAN nos campos modelo, versao e observacoes.
-        Retorna a categoria encontrada ou None se não encontrar.
-        """
-        # Concatena modelo, versão e observações para buscar
-        texto_completo = f"{modelo or ''} {versao or ''} {observacoes or ''}".upper()
-        
-        # Busca por HATCH primeiro
-        if "HATCH" in texto_completo:
-            return "Hatch"
-        
-        # Busca por SEDAN
-        if "SEDAN" in texto_completo:
-            return "Sedan"
-        
-        return None
-    
     def parse(self, data: Any, url: str) -> List[Dict]:
         """Processa dados do Autocerto"""
         veiculos = data["estoque"]["veiculo"]
@@ -53,19 +35,8 @@ class AutocertoParser(BaseParser):
                     modelo_veiculo, versao_veiculo
                 )
             else:
-                # Tenta detectar categoria em modelo, versão e observações primeiro
-                categoria_detectada = self._detectar_categoria_em_texto(
-                    modelo_veiculo,
-                    versao_veiculo,
-                    observacoes_veiculo
-                )
-                
-                if categoria_detectada:
-                    categoria_final = categoria_detectada
-                else:
-                    # Se não encontrou, usa a função existente com o modelo completo
-                    categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo)
-                
+                # Sem campo de carroceria na carga — VehicleCategorizer usa Etapas 2 e 3
+                categoria_final = None
                 cilindrada_final = None
             
             parsed = self.normalize_vehicle({

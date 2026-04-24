@@ -52,14 +52,16 @@ class ComautoParser1(BaseParser):
             tipo_veiculo = v.get("tipo", "").lower()
             is_moto = "moto" in tipo_veiculo or "motocicleta" in tipo_veiculo
             
+            body_style_carga = None
             if is_moto:
                 # Para motos: usa o sistema com modelo E versão
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
                     modelo_veiculo, versao_veiculo
                 )
             else:
-                # Para carros: usa o sistema existente
-                categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo)
+                # Etapa 1: passa valor raw da carga (carroceria) para o VehicleCategorizer
+                body_style_carga = v.get("carroceria", "") or ""
+                categoria_final  = None
                 cilindrada_final = None
             
             # Processa preço
@@ -97,7 +99,8 @@ class ComautoParser1(BaseParser):
                 "cambio": cambio_final,
                 "motor": motor_final, 
                 "portas": v.get("portas"), 
-                "categoria": v.get("carroceria") or categoria_final,
+                "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": preco_final,
                 "opcionais": v.get("acessorios") or opcionais_veiculo,
@@ -170,16 +173,16 @@ class ComautoParser2(BaseParser):
             segment = v.get("segment", "").upper()
             is_moto = category == "MOTO" or category == "MOTOCICLETA"
             
+            body_style_carga = None
             if is_moto:
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
                     modelo_final, versao_veiculo
                 )
                 tipo_final = "moto"
             else:
-                # Tenta mapear segment primeiro, depois fallback para definir_categoria_veiculo
-                categoria_final = self._map_segment_to_category(segment)
-                if not categoria_final:
-                    categoria_final = self.definir_categoria_veiculo(modelo_final, opcionais_processados)
+                # Etapa 1: passa segment raw da carga para o VehicleCategorizer
+                body_style_carga = segment.lower() if segment else ""
+                categoria_final  = None
                 cilindrada_final = None
                 tipo_final = "carro"
             
@@ -217,7 +220,8 @@ class ComautoParser2(BaseParser):
                 "cambio": cambio_final,
                 "motor": motor_info,
                 "portas": v.get("door"),
-                "categoria": categoria_final or segment,
+                "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": self.converter_preco(v.get("price")),
                 "opcionais": opcionais_processados,

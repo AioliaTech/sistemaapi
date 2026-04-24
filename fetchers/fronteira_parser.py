@@ -31,13 +31,16 @@ class FronteiraParser(BaseParser):
             categoria_veiculo = v.get("CATEGORY", "").lower()
             is_moto = categoria_veiculo == "motocicleta" or "moto" in categoria_veiculo
             
+            body_style_carga = None
             if is_moto:
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
                     modelo_veiculo, versao_veiculo
                 )
                 tipo_final = "moto"
             else:
-                categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo)
+                # Etapa 1: passa BODY_TYPE raw da carga para o VehicleCategorizer
+                body_style_carga = v.get("BODY_TYPE", "") or ""
+                categoria_final  = None
                 cilindrada_final = None
                 tipo_final = 'carro'
 
@@ -56,7 +59,8 @@ class FronteiraParser(BaseParser):
                 "cambio": v.get("cambio"), 
                 "motor": v.get("motor"),
                 "portas": v.get("DOORS"), 
-                "categoria": categoria_final or v.get("BODY_TYPE"),
+                "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final, 
                 "preco": self.converter_preco(v.get("preco")),
                 "opcionais": opcionais_veiculo, 

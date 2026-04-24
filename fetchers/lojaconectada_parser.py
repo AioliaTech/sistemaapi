@@ -4,13 +4,8 @@ Parser específico para Loja Conectada
 
 from .base_parser import BaseParser
 from typing import Dict, List, Any
-from vehicle_mappings import MAPEAMENTO_BODY_STYLE
-
-
 class LojaConectadaParser(BaseParser):
     """Parser para dados da Loja Conectada"""
-
-    CATEGORIA_MAPPING = MAPEAMENTO_BODY_STYLE
 
     def can_parse(self, data: Any, url: str) -> bool:
         """Verifica se pode processar dados da Loja Conectada"""
@@ -46,6 +41,7 @@ class LojaConectadaParser(BaseParser):
             versao_name = v.get("version", {}).get("name", "")
             motor_veiculo = self._extract_motor_from_version(versao_name)
 
+            body_style_carga = None
             if is_moto:
                 modelo_veiculo = v.get("model", {}).get("name", "")
                 versao_veiculo = versao_name
@@ -56,29 +52,10 @@ class LojaConectadaParser(BaseParser):
             else:
                 modelo_veiculo = v.get("model", {}).get("name", "")
                 versao_veiculo = versao_name
-                
-                # HIERARQUIA DE CATEGORIZAÇÃO:
-                # 1. Usa campo bodywork.name do JSON se disponível
-                bodywork_name = v.get("bodywork", {}).get("name", "")
-                bodywork_lower = bodywork_name.lower().strip() if bodywork_name else ""
-                categoria_bodywork = self.CATEGORIA_MAPPING.get(bodywork_lower, None)
-                
-                if categoria_bodywork:
-                    categoria_final = categoria_bodywork
-                elif bodywork_name:
-                    # Se bodywork existe mas não está no mapeamento, usa direto
-                    categoria_final = bodywork_name
-                else:
-                    # 2. Busca "hatch" ou "sedan" no modelo e versão
-                    texto_busca = f"{modelo_veiculo or ''} {versao_veiculo or ''}".upper()
-                    if "HATCH" in texto_busca:
-                        categoria_final = "Hatch"
-                    elif "SEDAN" in texto_busca:
-                        categoria_final = "Sedan"
-                    else:
-                        # 3. Infere do nosso mapeamento com sistema de scoring
-                        categoria_final = self.definir_categoria_veiculo(modelo_veiculo, opcionais_veiculo)
-                
+
+                # Etapa 1: passa valor raw da carga para o VehicleCategorizer
+                body_style_carga = v.get("bodywork", {}).get("name", "")
+                categoria_final  = None
                 cilindrada_final = None
                 categoria_name = v.get("category", {}).get("name", "")
                 tipo_final = "carro" if categoria_name.lower() == "car" else categoria_name
@@ -100,6 +77,7 @@ class LojaConectadaParser(BaseParser):
                 "motor": motor_veiculo,
                 "portas": v.get("doors"),
                 "categoria": categoria_final,
+                "body_style_carga": body_style_carga,
                 "cilindrada": cilindrada_final,
                 "preco": self.converter_preco(v.get("price")),
                 "opcionais": opcionais_veiculo,
