@@ -9,23 +9,23 @@ OPCIONAL_CHAVE_HATCH = "limpador traseiro"
 
 # --- Listas de Modelos por Categoria ---
 
-hatch_models = ["cooper", "mini cooper", "JOHN COOPER WORKS", "220i", "COUNTRYMAN", "500", "QQ", "308", "IX35", "A 200", "a200", "joy", "gol", "uno", "palio", "celta", "march", "sandero", "i30", "golf", "fox", "up", "fit", "etios", "bravo", "punto", "208", "argo", "mobi", "c3", "picanto", "stilo", "c4 vtr", "kwid", "soul", "agile", "fusca", "a1", "new beetle", "116i", "118i", "120i", "125i", "m135i", "m140i"]
+hatch_models = ["leaf", "j2", "prius", "ioniq", "fortwo", "dolphin", "a 250", "a-250", "cooper", "mini cooper", "JOHN COOPER WORKS", "220i", "COUNTRYMAN", "500", "QQ", "308", "IX35", "A 200", "a200", "joy", "gol", "uno", "palio", "celta", "march", "sandero", "i30", "golf", "fox", "up", "fit", "etios", "bravo", "punto", "208", "argo", "mobi", "c3", "picanto", "stilo", "c4 vtr", "kwid", "soul", "agile", "fusca", "a1", "new beetle", "116i", "118i", "120i", "125i", "m135i", "m140i"]
 for model in hatch_models: 
     MAPEAMENTO_CATEGORIAS[model] = "Hatch"
 
-sedan_models = ["Grand Siena", "c 43", "XE", "sonata", "c 300", "c300", "a4", "arrizo6", "arrizo 6", "A5", "430i", "civic", "a6", "sentra", "jetta", "voyage", "siena", "grand siena", "cobalt", "logan", "fluence", "cerato", "elantra", "virtus", "accord", "altima", "fusion", "passat", "vectra sedan", "classic", "cronos", "linea", "408", "c4 pallas", "bora", "hb20s", "lancer", "camry", "onix plus", "azera", "malibu", "318i", "320d", "320i", "328i", "330d", "330i", "335i", "520d", "528i", "530d", "530i", "535i", "540i", "550i", "740i", "750i", "c180", "c200", "c250", "c300", "e250", "e350", "m3", "m5", "s4", "classe c", "classe e", "classe s", "eqe", "eqs"]
+sedan_models = ["charger", "stratus", "santana", "S90", "king", "kompressor", "clc 200", "clc-200", "c-250", "c250", "c-200", "c200", "c-180", "c180", "c 230", "c 230k", "c230", "c230k", "Grand Siena", "c 43", "XE", "sonata", "c 300", "c300", "a4", "arrizo6", "arrizo 6", "A5", "430i", "civic", "a6", "sentra", "jetta", "voyage", "siena", "grand siena", "cobalt", "logan", "fluence", "cerato", "elantra", "virtus", "accord", "altima", "fusion", "passat", "vectra sedan", "classic", "cronos", "linea", "408", "c4 pallas", "bora", "hb20s", "lancer", "camry", "onix plus", "azera", "malibu", "318i", "320d", "320i", "328i", "330d", "330i", "335i", "520d", "528i", "530d", "530i", "535i", "540i", "550i", "740i", "750i", "c180", "c200", "c250", "c300", "e250", "e350", "m3", "m5", "s4", "classe c", "classe e", "classe s", "eqe", "eqs"]
 for model in sedan_models: 
     MAPEAMENTO_CATEGORIAS[model] = "Sedan"
 
-hatch_sedan_models = ["330e", "320iA", "onix", "hb20", "yaris", "city", "a3", "corolla", "focus", "fiesta", "corsa", "astra", "vectra", "cruze", "clio", "megane", "206", "207", "307", "tiida", "ka", "versa", "prisma", "polo", "c4", "sonic", "série 1", "série 2", "série 3", "série 4", "série 5", "série 6", "série 7", "classe a", "cla"]
+hatch_sedan_models = ["impreza", "330e", "320iA", "onix", "hb20", "yaris", "city", "a3", "corolla", "focus", "fiesta", "corsa", "astra", "vectra", "cruze", "clio", "megane", "206", "207", "307", "tiida", "ka", "versa", "prisma", "polo", "c4", "sonic", "série 1", "série 2", "série 3", "série 4", "série 5", "série 6", "série 7", "classe a", "cla"]
 for model in hatch_sedan_models: 
     MAPEAMENTO_CATEGORIAS[model] = "hatch,sedan"
 
-suv_models = ["ASX", "asx", "XC 60", "V40", "eclipse", "evoque", "Cayenne", "wrv", "w-rv", "blazer", "f-pace", "vitara", "VITARA", "kona", "KONA", "freemont", "RANGE ROVER SPORT", "GLK 220", "disc spt", "veracruz", "Captiva", "Discovery", "Macan", "JOURNEY", "XC90", "xc60", "tiggo", "edge", "outlander", "range rover evoque", "song plus", "duster", "ecosport", "hrv", "hr-v", "COMPASS", "compass", "renegade", "tracker", "kicks", "captur", "creta", "tucson", "santa fe", "sorento", "sportage", "pajero", "tr4", "aircross", "tiguan", "t-cross", "tcross", "rav4", "land cruiser", "cherokee", "grand cherokee", "trailblazer", "pulse", "fastback", "territory", "bronco sport", "2008", "3008", "5008", "c4 cactus", "taos", "crv", "cr-v", "corolla cross", "hilux sw4", "sw4", "pajero sport", "commander", "nivus", "equinox", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "ix", "ix1", "ix2", "ix3", "gla", "glb", "glc", "gle", "gls", "classe g", "eqa", "eqb", "eqc", "q2", "q3", "q5", "q7", "q8", "q6 e-tron", "e-tron", "q4 e-tron", "q4etron", "wrx", "xv"]
+suv_models = ["epace", "tera", "wrv", "ccross", "prado", "H6", "UNI-T", "CRETA", "7", "XC 90", "XC 40", "song pro", "song", "yuan plus", "glk 300", "glk-300", "ASX", "asx", "XC 60", "V40", "eclipse", "evoque", "Cayenne", "wrv", "w-rv", "blazer", "f-pace", "vitara", "VITARA", "kona", "KONA", "freemont", "RANGE ROVER SPORT", "GLK 220", "disc spt", "veracruz", "Captiva", "Discovery", "Macan", "JOURNEY", "XC90", "xc60", "tiggo", "edge", "outlander", "range rover evoque", "song plus", "duster", "ecosport", "hrv", "hr-v", "COMPASS", "compass", "renegade", "tracker", "kicks", "captur", "creta", "tucson", "santa fe", "sorento", "sportage", "pajero", "tr4", "aircross", "tiguan", "t-cross", "tcross", "rav4", "land cruiser", "cherokee", "grand cherokee", "trailblazer", "pulse", "fastback", "territory", "bronco sport", "2008", "3008", "5008", "c4 cactus", "taos", "crv", "cr-v", "corolla cross", "hilux sw4", "sw4", "pajero sport", "commander", "nivus", "equinox", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "ix", "ix1", "ix2", "ix3", "gla", "glb", "glc", "gle", "gls", "classe g", "eqa", "eqb", "eqc", "q2", "q3", "q5", "q7", "q8", "q6 e-tron", "e-tron", "q4 e-tron", "q4etron", "wrx", "xv"]
 for model in suv_models: 
     MAPEAMENTO_CATEGORIAS[model] = "SUV"
 
-caminhonete_models = ["D-20", "f-350", "S-10 Pick-up", "Silverado", "F-1000", "F1000", "duster oroch", "d20", "hilux", "ranger", "S10", "S-10", "L200 Triton", "l200", "triton", "toro", "frontier", "amarok", "maverick", "ram 1500", "rampage", "f-250", "f250", "courier", "dakota", "gladiator", "hoggar"]
+caminhonete_models = ["shark", "D-20", "f-350", "S-10 Pick-up", "Silverado", "F-1000", "F1000", "duster oroch", "d20", "hilux", "ranger", "S10", "S-10", "L200 Triton", "l200", "triton", "toro", "frontier", "amarok", "maverick", "ram 1500", "rampage", "f-250", "f250", "courier", "dakota", "gladiator", "hoggar"]
 for model in caminhonete_models: 
     MAPEAMENTO_CATEGORIAS[model] = "Caminhonete"
 
@@ -45,7 +45,7 @@ conversivel_models = ["911 cabrio", "beetle cabriolet", "boxster", "eos", "miata
 for model in conversivel_models: 
     MAPEAMENTO_CATEGORIAS[model] = "Conversível"
 
-station_wagon_models = ["weekend", "a4 avant", "fielder", "golf variant", "palio weekend", "parati", "quantum", "spacefox", "rs2", "rs4", "rs6"]
+station_wagon_models = ["grandis", "space cross", "weekend", "a4 avant", "fielder", "golf variant", "palio weekend", "parati", "quantum", "spacefox", "rs2", "rs4", "rs6"]
 for model in station_wagon_models: 
     MAPEAMENTO_CATEGORIAS[model] = "Station Wagon"
 
