@@ -10,8 +10,8 @@ from urllib.parse import urlparse
 
 # Hosts que exigem Web Unlocker (IPs de datacenter e proxies conhecidos são bloqueados)
 _WEB_UNLOCKER_HOSTS = [
-    "revendamais.com.br",
-    "app.revendamais.com.br",
+    # "revendamais.com.br",      # desativado — testando acesso direto sem Bright Data
+    # "app.revendamais.com.br",  # reativar se o fetch direto falhar
 ]
 
 
