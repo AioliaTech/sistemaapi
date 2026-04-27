@@ -63,6 +63,10 @@ for model in offroad_models:
 MAPEAMENTO_MOTOS = {
     # Street/Urbanas (commuter básicas e econômicas)
     "EN": (125, "street"),
+    "dominar 160": (160, "street"),
+    "scrambler 400 x": (400, "street"),
+    "cbx 150": (150, "street"),
+    "cb 450": (450, "street"),
     "duke 200": (200, "street"),
     "scram 411": (400, "street"),
     "DK 150": (150, "street"),
@@ -121,6 +125,9 @@ MAPEAMENTO_MOTOS = {
     "fz6": (150, "street"),
     
     # Scooter (transmissão automática, design step-through)
+    "XY 50": (50, "scooter"),
+    "JET 50Q": (50, "scooter"),
+    "SH 150": (150, "scooter"),
     "SH 300": (300, "scooter"),
     "adv": (150, "scooter"),
     "160 DLX ABS": (160, "scooter"),
@@ -142,6 +149,7 @@ MAPEAMENTO_MOTOS = {
     "biz ex": (125, "scooter"),
     "biz 100": (100, "scooter"),
     "pop 110": (110, "scooter"),
+    "pop 100": (110, "scooter"),
     "pop110": (110, "scooter"),  # Variação sem espaço
     "pop 110i": (110, "scooter"),
     "pop110i": (110, "scooter"),  # Variação sem espaço
@@ -165,6 +173,8 @@ MAPEAMENTO_MOTOS = {
     "MAXUS": (0, "scooter"),
     
     # Trail/Offroad (dual-sport, suspensão robusta)
+    "xr 250": (250, "trail"),
+    "nk 150": (150, "trail"),
     "NH 190": (190, "trail"),
     "crosser": (150, "trail"),
     "nxr 150 bros": (150, "trail"),
@@ -210,6 +220,7 @@ MAPEAMENTO_MOTOS = {
     "dl160": (160, "trail"),
     
     # BigTrail/Adventure (alta cilindrada, touring)
+
     "t350": (350, "bigtrail"),
     "cb 500x": (500, "bigtrail"),
     "f 800": (800, "bigtrail"),
@@ -280,6 +291,8 @@ MAPEAMENTO_MOTOS = {
     "yzf r-6": (600, "esportiva carenada"),
     "r15": (150, "esportiva carenada"),
     "r1": (1000, "esportiva carenada"),
+    "yzf r1": (1000, "esportiva carenada"),
+    "yzf r1 1000": (1000, "esportiva carenada"),
     "ninja 300": (300, "esportiva carenada"),
     "ninja300": (300, "esportiva carenada"),  # Variação sem espaço
     "ninja 400": (400, "esportiva carenada"),
@@ -300,7 +313,9 @@ MAPEAMENTO_MOTOS = {
     
     # Esportiva Naked (naked sport, sem carenagem)
     "CB500F": (500, "esportiva naked"),
-    "Z 400": (400, "esportiva naked"),    
+    "Z 400": (400, "esportiva naked"),
+    "Z 300": (300, "esportiva naked"),
+    "Z 900": (900, "esportiva naked"), 
     "310 R": (310, "esportiva naked"),
     "Z 1000": (1000, "esportiva naked"),
     "mt 03": (300, "esportiva naked"),
@@ -360,6 +375,7 @@ MAPEAMENTO_MOTOS = {
     
     # Custom/Cruiser (posição relaxada, estética clássica)
     "FAT BOY": (1690, "custom"),
+    "chopper road 150": (150, "custom"),
     "MASTER RIDE 150": (150, "custom"),
     "NIGHTSTER SPECIAL": (975, "custom"),
     "iron 883": (883, "custom"),
@@ -387,6 +403,7 @@ MAPEAMENTO_MOTOS = {
     "mt01": (1700, "custom"),
     "Meteor Supernova": (350, "custom"),
     "VT 600": (600, "custom"),
+    "intruder 125": (125, "custom"),
     
     # Touring (longas distâncias, conforto)
     "R 1150": (11500, "touring"),
