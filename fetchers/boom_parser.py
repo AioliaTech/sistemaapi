@@ -39,22 +39,22 @@ class BoomParser(BaseParser):
             # Verifica se é moto
             is_moto = 'moto' in str(tipo_veiculo).lower()
             
+            # Processa opcionais (para todos os tipos de veículo)
+            opcionais_str = ""
+            opcional = v.get('opcional')
+            if opcional and isinstance(opcional, dict) and 'item' in opcional:
+                items = opcional['item']
+                if isinstance(items, list):
+                    opcionais_str = ", ".join(str(item) for item in items if item)
+                elif items:
+                    opcionais_str = str(items)
+
             if is_moto:
                 cilindrada_final, categoria_final = self.inferir_cilindrada_e_categoria_moto(
                     modelo_veiculo, None
                 )
                 tipo_final = "moto"
             else:
-                # Processa opcionais
-                opcionais_str = ""
-                opcional = v.get('opcional')
-                if opcional and isinstance(opcional, dict) and 'item' in opcional:
-                    items = opcional['item']
-                    if isinstance(items, list):
-                        opcionais_str = ", ".join(str(item) for item in items if item)
-                    elif items:
-                        opcionais_str = str(items)
-
                 # Sem campo de carroceria na carga — VehicleCategorizer usa Etapas 2 e 3
                 categoria_final = None
                 cilindrada_final = None
