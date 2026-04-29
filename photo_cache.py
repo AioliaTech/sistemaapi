@@ -168,6 +168,22 @@ class PhotoCache:
         finally:
             conn.close()
 
+    def mark_existing_photos_seen(self, vehicles: List[dict]) -> None:
+        """
+        Protege as fotos do último parse bem-sucedido quando o parse atual falha.
+        Marca seen=1 para todas as URLs já em cache, impedindo que cycle_end()
+        as delete do disco — preserva o estoque desatualizado em vez de ficar sem fotos.
+        """
+        if not self._enabled:
+            return
+        for vehicle in vehicles:
+            fotos = vehicle.get("fotos")
+            if fotos and isinstance(fotos, list):
+                for url in fotos:
+                    if isinstance(url, str) and url.startswith("http"):
+                        if self._db_get(url) is not None:
+                            self._db_mark_seen(url)
+
     def resolve_all_vehicles_sync(self, vehicles: List[dict]) -> List[dict]:
         """
         Wrapper síncrono para uso no BackgroundScheduler (thread sem event loop).

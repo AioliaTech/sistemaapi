@@ -218,6 +218,17 @@ class MultiTenantScheduler:
 
         except Exception as e:
             error_msg = str(e)
+
+            # Protege fotos do último parse bem-sucedido: marca seen=1 para que
+            # cycle_end() não delete os arquivos físicos do disco.
+            # Resultado: estoque desatualizado em vez de URLs quebradas.
+            from photo_cache import photo_cache
+            if photo_cache.is_enabled():
+                existing_data = self.client_manager.load_client_vehicles(client.slug)
+                if existing_data:
+                    photo_cache.mark_existing_photos_seen(existing_data.get("veiculos", []))
+                    print(f"[SCHEDULER] ⚠️  Fotos do último sucesso preservadas para '{client.name}'")
+
             self.client_manager.update_client_status(
                 client_id=client_id,
                 status="error",
